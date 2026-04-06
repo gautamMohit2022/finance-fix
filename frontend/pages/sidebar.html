@@ -1,0 +1,49 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">💰</div>
+    <div>
+      <div class="logo-text">FinTrack</div>
+      <div class="logo-sub">Finance System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+  <div class="nav-section-label">Main</div>
+  <a class="nav-item" href="dashboard.html" id="nav-dashboard">
+    <span class="nav-icon">📊</span> Dashboard
+  </a>
+  <a class="nav-item" href="transaction.html" id="nav-transactions">
+    <span class="nav-icon">💳</span> Transactions
+  </a>
+  <a class="nav-item" href="budget.html" id="nav-budget">
+    <span class="nav-icon">🎯</span> Budget
+  </a>
+
+  <!-- ✅ NEW USERS SECTION -->
+  <div class="nav-section-label sidebar-users-section" style="display:none;">Admin</div>
+
+  <a class="nav-item nav-users" href="users.html" style="display:none;">
+    <span class="nav-icon">👥</span> Users
+  </a>
+
+  <div class="nav-section-label">Account</div>
+  <a class="nav-item" href="profile.html" id="nav-profile">
+    <span class="nav-icon">👤</span> Profile
+  </a>
+  <a class="nav-item" href="#" onclick="auth.logout()">
+    <span class="nav-icon">🚪</span> Logout
+  </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="window.location.href='profile.html'">
+      <div class="user-avatar" id="userAvatar">M</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading...</div>
+        <div class="user-role" id="userRole">Member</div>
+      </div>
+      <span style="color:var(--text-muted);font-size:13px">⚙️</span>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profile — FinTrack</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+.profile-hero{background:linear-gradient(135deg,var(--accent-dim),var(--blue-dim));border:1px solid var(--border);border-radius:var(--radius-xl);padding:32px;display:flex;align-items:center;gap:24px;margin-bottom:24px}
+.profile-avatar-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:grid;place-items:center;font-size:32px;font-weight:800;font-family:var(--font-display);color:var(--bg-base);flex-shrink:0;border:3px solid var(--border-accent)}
+.profile-info{flex:1}.profile-name{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.profile-email{font-size:.85rem;color:var(--text-secondary)}
+.profile-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;font-size:.75rem;font-weight:600;margin-top:8px}
+.profile-badge.viewer{background:var(--blue-dim);color:var(--blue)}
+.profile-badge.analyst{background:var(--purple-dim);color:var(--purple)}
+.profile-badge.admin{background:var(--accent-dim);color:var(--accent)}
+.stat-mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-mini{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center}
+.stat-mini-val{font-family:var(--font-display);font-size:1.4rem;font-weight:800;margin-bottom:4px}
+.stat-mini-lbl{font-size:.72rem;color:var(--text-secondary);font-weight:500}
+.settings-section{margin-bottom:24px}
+.settings-title{font-family:var(--font-display);font-size:.95rem;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-info .setting-label{font-size:.875rem;font-weight:600}
+.setting-info .setting-desc{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
+.danger-zone{background:rgba(255,92,124,.04);border:1px solid rgba(255,92,124,.2);border-radius:var(--radius-lg);padding:20px}
+.danger-title{color:var(--expense);font-weight:700;font-size:.9rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card"><div class="user-avatar" id="userAvatar">M</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div></div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Profile</div><div class="navbar-subtitle">Manage your account</div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveProfile()">💾 Save Changes</button>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-title" style="margin-bottom:20px">Account Settings</div>
+
+      <!-- Profile Hero -->
+      <div class="profile-hero">
+        <div class="profile-avatar-big" id="bigAvatar">M</div>
+        <div class="profile-info">
+          <div class="profile-name" id="heroName">Loading...</div>
+          <div class="profile-email" id="heroEmail">loading@email.com</div>
+          <div class="profile-badge" id="heroBadge">Member</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:4px">Member since</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:.9rem" id="memberSince">—</div>
+        </div>
+      </div>
+
+      <!-- Mini Stats -->
+      <div class="stat-mini-grid stagger" id="miniStats">
+        <div class="skeleton" style="height:80px;border-radius:var(--radius-md)"></div>
+        <div class="skeleton" style="height:80px;border-radius:var(--radius-md)"></div>
+        <div class="skeleton" style="height:80px;border-radius:var(--radius-md)"></div>
+        <div class="skeleton" style="height:80px;border-radius:var(--radius-md)"></div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Edit Profile -->
+        <div class="card">
+          <div class="settings-title">Personal Information</div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <div class="input-wrapper"><span class="input-icon">👤</span><input class="form-input" id="fName" type="text" placeholder="Your full name"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrapper"><span class="input-icon">✉️</span><input class="form-input" id="fEmail" type="email" placeholder="your@email.com"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="fRole">
+              <option value="viewer">👁️ Viewer — Read only</option>
+              <option value="analyst">📊 Analyst — View + filters</option>
+              <option value="admin">⚙️ Admin — Full access</option>
+            </select>
+            <div class="form-hint">Your role determines what actions you can perform</div>
+          </div>
+          <button class="btn btn-primary btn-full" id="saveProfileBtn" onclick="saveProfile()">💾 Save Changes</button>
+        </div>
+
+        <!-- Settings -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="settings-title">Preferences</div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-label">Currency</div><div class="setting-desc">Display currency symbol</div></div>
+              <select class="form-select" style="width:auto" id="currency">
+                <option value="₹">₹ INR</option><option value="$">$ USD</option><option value="€">€ EUR</option><option value="£">£ GBP</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-label">Email Notifications</div><div class="setting-desc">Budget alerts and summaries</div></div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notifToggle" checked>
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info"><div class="setting-label">Monthly Reports</div><div class="setting-desc">Auto-generate monthly summaries</div></div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="reportToggle">
+                <div class="toggle-track"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="settings-title">Change Password</div>
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <div class="input-wrapper"><span class="input-icon">🔒</span><input class="form-input" id="curPass" type="password" placeholder="Current password"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <div class="input-wrapper"><span class="input-icon">🔑</span><input class="form-input" id="newPass" type="password" placeholder="New password (min 8 chars)"></div>
+            </div>
+            <button class="btn btn-secondary btn-full" onclick="changePassword()">Update Password</button>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="danger-zone">
+            <div class="danger-title">⚠️ Danger Zone</div>
+            <p style="font-size:.8rem;color:var(--text-secondary);margin-bottom:14px">These actions are irreversible. Please be careful.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-danger btn-sm" onclick="exportData()">📥 Export My Data</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmDelete()">🗑️ Delete Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); utils.initSidebar();
+
+async function loadProfile() {
+  try {
+    const [me, summary, txns] = await Promise.all([api.getMe(), api.getSummary(), api.getTransactions()]);
+    const user = me;
+
+    // Hero
+    document.getElementById('bigAvatar').textContent = (user.full_name||user.email||'U')[0].toUpperCase();
+    document.getElementById('heroName').textContent  = user.full_name || 'User';
+    document.getElementById('heroEmail').textContent = user.email || '';
+    document.getElementById('memberSince').textContent = utils.date(user.created_at) || 'N/A';
+
+    const badge = document.getElementById('heroBadge');
+    const roleMap = { viewer:'👁️ Viewer', analyst:'📊 Analyst', admin:'⚙️ Admin' };
+    badge.textContent  = roleMap[user.role] || '👤 Member';
+    badge.className    = `profile-badge ${user.role||'viewer'}`;
+
+    // Form prefill
+    document.getElementById('fName').value  = user.full_name || '';
+    document.getElementById('fEmail').value = user.email || '';
+    document.getElementById('fRole').value  = user.role || 'viewer';
+
+    // Mini stats
+    document.getElementById('miniStats').innerHTML = `
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--income)">${(txns||[]).filter(t=>t.type==='income').length}</div><div class="stat-mini-lbl">Income Records</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--expense)">${(txns||[]).filter(t=>t.type==='expense').length}</div><div class="stat-mini-lbl">Expense Records</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--blue)">${utils.currency(summary.balance||0)}</div><div class="stat-mini-lbl">Net Balance</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--warning)">${(txns||[]).length}</div><div class="stat-mini-lbl">Total Transactions</div></div>`;
+
+  } catch(e) { utils.toast('Failed to load profile: '+e.message,'error'); }
+}
+
+async function saveProfile() {
+  const name  = document.getElementById('fName').value.trim();
+  const email = document.getElementById('fEmail').value.trim();
+  const role  = document.getElementById('fRole').value;
+  if (!name || !email) { utils.toast('Name and email are required','warning'); return; }
+  const btn = document.getElementById('saveProfileBtn');
+  utils.setLoading(btn, true);
+  try {
+    const updated = await api.updateMe({ full_name:name, email, role });
+    auth.save(auth.getToken(), updated);
+    utils.toast('Profile updated successfully','success');
+    await loadProfile();
+  } catch(e) { utils.toast(e.message,'error'); }
+  finally { utils.setLoading(btn, false); }
+}
+
+async function changePassword() {
+  const cur = document.getElementById('curPass').value;
+  const nw  = document.getElementById('newPass').value;
+  if (!cur || !nw) { utils.toast('Fill both password fields','warning'); return; }
+  if (nw.length < 8) { utils.toast('New password must be at least 8 characters','warning'); return; }
+  try {
+    await api.updateMe({ current_password:cur, new_password:nw });
+    document.getElementById('curPass').value='';
+    document.getElementById('newPass').value='';
+    utils.toast('Password changed successfully','success');
+  } catch(e) { utils.toast(e.message,'error'); }
+}
+
+async function exportData() {
+  try {
+    const txns = await api.getTransactions();
+    const rows = [['Date','Type','Category','Amount','Description']];
+    txns.forEach(t=>rows.push([t.date,t.type,t.category||'',t.amount,t.description||'']));
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download='my_finance_data.csv'; a.click();
+    utils.toast('Data exported','success');
+  } catch(e) { utils.toast('Export failed','error'); }
+}
+
+function confirmDelete() {
+  if (confirm('⚠️ Are you absolutely sure? This will permanently delete your account and all data.')) {
+    utils.toast('Account deletion requested (feature coming soon)','warning');
+  }
+}
+
+loadProfile();
+</script>
+</body>
+</html>

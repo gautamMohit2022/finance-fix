@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Summary — FinTrack</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── SECTION HEADERS ── */
+.section-header{display:flex;align-items:center;gap:10px;margin:28px 0 16px}
+.section-header-line{flex:1;height:1px;background:var(--border)}
+.section-label{font-family:var(--font-display);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-secondary);white-space:nowrap}
+.section-badge{font-size:.65rem;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--accent-dim);color:var(--accent)}
+
+/* ── OVERVIEW CARDS ── */
+.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:8px}
+.ov-card{border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;cursor:default}
+.ov-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.35)}
+.ov-card.income {background:linear-gradient(135deg,rgba(0,229,176,.13),rgba(0,229,176,.03));border:1px solid rgba(0,229,176,.2)}
+.ov-card.expense{background:linear-gradient(135deg,rgba(255,92,124,.13),rgba(255,92,124,.03));border:1px solid rgba(255,92,124,.2)}
+.ov-card.balance{background:linear-gradient(135deg,rgba(79,142,247,.13),rgba(79,142,247,.03));border:1px solid rgba(79,142,247,.2)}
+.ov-card.savings{background:linear-gradient(135deg,rgba(155,109,255,.13),rgba(155,109,255,.03));border:1px solid rgba(155,109,255,.2)}
+.ov-glow{position:absolute;top:-35px;right:-35px;width:100px;height:100px;border-radius:50%;filter:blur(40px);opacity:.3;pointer-events:none}
+.ov-card.income  .ov-glow{background:#00E5B0}
+.ov-card.expense .ov-glow{background:#FF5C7C}
+.ov-card.balance .ov-glow{background:#4F8EF7}
+.ov-card.savings .ov-glow{background:#9B6DFF}
+.ov-emoji{font-size:24px;display:block;margin-bottom:10px}
+.ov-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;opacity:.55;margin-bottom:5px}
+.ov-value{font-family:var(--font-display);font-size:1.7rem;font-weight:900;line-height:1;margin-bottom:5px}
+.ov-card.income  .ov-value{color:#00E5B0}
+.ov-card.expense .ov-value{color:#FF5C7C}
+.ov-card.balance .ov-value{color:#4F8EF7}
+.ov-card.savings .ov-value{color:#9B6DFF}
+.ov-sub{font-size:.7rem;opacity:.55}
+
+/* ── CURRENT MONTH BANNER ── */
+.month-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:8px}
+.mb-item{text-align:center;padding:0 10px}
+.mb-item+.mb-item{border-left:1px solid var(--border)}
+.mb-val{font-family:var(--font-display);font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.mb-lbl{font-size:.68rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.mb-tag{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-top:4px;display:inline-block}
+
+/* ── CHARTS ── */
+.charts-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:8px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.cc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cc-title{font-family:var(--font-display);font-size:.9rem;font-weight:700}
+.cc-sub{font-size:.7rem;color:var(--text-secondary);margin-top:2px}
+.chart-wrap{position:relative;height:220px}
+.ctabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px}
+.ctab{padding:5px 11px;border-radius:6px;border:none;background:none;color:var(--text-secondary);font-size:.73rem;font-weight:600;cursor:pointer;transition:all .18s}
+.ctab.active{background:var(--bg-surface);color:var(--text-primary)}
+
+/* ── CATEGORY BREAKDOWN ── */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+.cat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.cat-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.cat-row:last-child{border-bottom:none}
+.cat-icon{font-size:16px;width:28px;text-align:center;flex-shrink:0}
+.cat-name{font-size:.82rem;font-weight:600;flex:1}
+.cat-bar-wrap{width:90px;height:5px;background:var(--bg-input);border-radius:99px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:99px}
+.cat-amount{font-size:.8rem;font-weight:700;font-family:var(--font-display);min-width:70px;text-align:right}
+.cat-pct{font-size:.67rem;color:var(--text-muted);min-width:34px;text-align:right}
+
+/* ── RECENT ACTIVITY ── */
+.recent-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.recent-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.recent-item:last-child{border-bottom:none;padding-bottom:0}
+.ri-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.ri-meta{flex:1;min-width:0}
+.ri-name{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.ri-date{font-size:.7rem;color:var(--text-secondary)}
+.ri-amt{font-family:var(--font-display);font-size:.92rem;font-weight:800;white-space:nowrap}
+
+/* ── TOP SPENDING TABLE ── */
+.top-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.top-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.top-row:last-child{border-bottom:none}
+.top-rank{font-size:.75rem;font-weight:800;font-family:var(--font-display);color:var(--text-muted);min-width:22px}
+.top-name{font-size:.83rem;font-weight:600;flex:1}
+.top-bar-wrap{width:120px;height:6px;background:var(--bg-input);border-radius:99px;overflow:hidden}
+.top-bar-fill{height:100%;border-radius:99px;transition:width .8s ease}
+.top-amount{font-size:.8rem;font-weight:700;font-family:var(--font-display);color:var(--expense);min-width:70px;text-align:right}
+.top-pct{font-size:.68rem;font-weight:600;min-width:36px;text-align:right;color:var(--text-muted)}
+
+/* ── API CALL TABLE ── */
+.api-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.api-table th{text-align:left;padding:9px 12px;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border)}
+.api-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top}
+.api-table tr:last-child td{border-bottom:none}
+.api-table tr:hover td{background:rgba(255,255,255,.02)}
+.method-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.65rem;font-weight:800;font-family:var(--font-display);letter-spacing:.05em}
+.method-get{background:rgba(0,229,176,.12);color:var(--accent)}
+.endpoint-code{font-family:var(--font-mono, monospace);font-size:.78rem;color:var(--blue)}
+.access-tag{padding:2px 8px;border-radius:99px;font-size:.65rem;font-weight:600}
+.access-all    {background:rgba(0,229,176,.1); color:var(--income)}
+.access-analyst{background:rgba(155,109,255,.1);color:var(--purple)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){.overview-grid{grid-template-columns:repeat(2,1fr)}.charts-2{grid-template-columns:1fr}.cat-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.overview-grid{grid-template-columns:1fr}.month-banner{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <div class="sidebar-search"><div class="sidebar-search-inner"><span class="ss-icon">🔍</span><input type="text" placeholder="Search transactions..." id="sidebarSearch"></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <a class="nav-item active" href="summary.html"><span class="nav-icon">📋</span> Summary</a>
+      <a class="nav-item" id="navAnalytics" href="analytics.html" style="display:none"><span class="nav-icon">📈</span> Analytics</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item" id="navUsers" href="users.html" style="display:none"><span class="nav-icon">👥</span> Users</a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer"><div class="user-card" onclick="window.location.href='profile.html'"><div class="user-avatar" id="userAvatar">M</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div></div></div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Financial Summary</div><div class="navbar-subtitle">Complete overview of your finances</div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-search"><span class="search-icon">🔍</span><input type="text" placeholder="Search transactions..." id="globalSearch"></div>
+      <div class="navbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="exportSummary()">📥 Export</button>
+        <div class="icon-btn" onclick="loadAll()" title="Refresh">🔄</div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+
+      <!-- Page Title + Role Banner -->
+      <div style="margin-bottom:22px">
+        <h1 style="font-size:1.45rem;margin-bottom:6px">Financial Summary</h1>
+        <p style="font-size:.82rem;color:var(--text-secondary)">All your financial data in one place — income, expenses, trends and insights.</p>
+      </div>
+      <div class="role-banner" id="roleBanner">
+        <span class="rb-icon" id="rbIcon">👁️</span>
+        <div class="rb-body"><strong id="rbTitle">Loading...</strong><span id="rbDesc"></span></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 1 — OVERVIEW (All roles)
+           API: GET /summary/overview
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header">
+        <span class="section-label">1 — Financial Overview</span>
+        <span class="section-badge">GET /summary/overview</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">All roles</span>
+      </div>
+
+      <div class="overview-grid stagger" id="overviewGrid">
+        <div class="ov-card income"><div class="ov-glow"></div><span class="ov-emoji">📈</span><div class="ov-label">Total Income</div><div class="ov-value" id="ovIncome">—</div><div class="ov-sub" id="ovIncomeSub">—</div></div>
+        <div class="ov-card expense"><div class="ov-glow"></div><span class="ov-emoji">📉</span><div class="ov-label">Total Expenses</div><div class="ov-value" id="ovExpense">—</div><div class="ov-sub" id="ovExpenseSub">—</div></div>
+        <div class="ov-card balance"><div class="ov-glow"></div><span class="ov-emoji">💼</span><div class="ov-label">Current Balance</div><div class="ov-value" id="ovBalance">—</div><div class="ov-sub" id="ovBalanceSub">—</div></div>
+        <div class="ov-card savings"><div class="ov-glow"></div><span class="ov-emoji">💜</span><div class="ov-label">Savings Rate</div><div class="ov-value" id="ovSavings">—</div><div class="ov-sub" id="ovSavingsSub">—</div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 2 — CURRENT MONTH (Analyst / Admin)
+           API: GET /summary/current-month
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header" id="monthSection">
+        <span class="section-label">2 — Current Month</span>
+        <span class="section-badge">GET /summary/current-month</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">Analyst + Admin</span>
+      </div>
+      <div class="month-banner" id="monthBanner">
+        <div class="mb-item"><div class="mb-val" id="mbMonth" style="color:var(--text-secondary);font-size:.95rem">—</div><div class="mb-lbl">Period</div></div>
+        <div class="mb-item"><div class="mb-val" id="mbIncome" style="color:var(--income)">—</div><div class="mb-lbl">Income</div></div>
+        <div class="mb-item"><div class="mb-val" id="mbExpense" style="color:var(--expense)">—</div><div class="mb-lbl">Expenses</div></div>
+        <div class="mb-item"><div class="mb-val" id="mbBalance" style="color:var(--blue)">—</div><div class="mb-lbl">Balance</div><div class="mb-tag" id="mbTag" style="background:var(--accent-dim);color:var(--accent)"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 3 — MONTHLY TOTALS (Analyst / Admin)
+           API: GET /summary/monthly
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header" id="monthlySection">
+        <span class="section-label">3 — Monthly Totals</span>
+        <span class="section-badge">GET /summary/monthly</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">Analyst + Admin</span>
+      </div>
+      <div class="charts-2">
+        <div class="chart-card">
+          <div class="cc-hd">
+            <div><div class="cc-title">Income vs Expenses by Month</div><div class="cc-sub">Trend over time</div></div>
+            <div class="ctabs">
+              <button class="ctab active" onclick="switchMonthChart('bar',this)">Bar</button>
+              <button class="ctab" onclick="switchMonthChart('line',this)">Line</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="monthChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-hd"><div><div class="cc-title">Monthly Balance</div><div class="cc-sub">Net per month</div></div></div>
+          <div class="chart-wrap"><canvas id="balanceChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Monthly Table -->
+      <div class="card" style="margin-bottom:8px;padding:0;overflow:hidden" id="monthlyTableWrap">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Balance</th><th>Savings Rate</th></tr></thead>
+            <tbody id="monthlyTable"><tr><td colspan="5" style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 4 — CATEGORY BREAKDOWN (Analyst / Admin)
+           API: GET /summary/categories + GET /summary/income-breakdown
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header" id="catSection">
+        <span class="section-label">4 — Category Breakdown</span>
+        <span class="section-badge">GET /summary/categories</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">Analyst + Admin</span>
+      </div>
+      <div class="cat-grid" id="catGrid">
+        <!-- Expense categories -->
+        <div class="cat-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div><div class="cc-title">💸 Expense Categories</div><div class="cc-sub">Where your money goes</div></div>
+            <div class="chart-wrap" style="height:90px;width:90px"><canvas id="expensePie"></canvas></div>
+          </div>
+          <div id="expenseCats"><div class="skeleton" style="height:140px"></div></div>
+        </div>
+        <!-- Income categories -->
+        <div class="cat-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div><div class="cc-title">💰 Income Sources</div><div class="cc-sub">Where your money comes from</div></div>
+            <div class="chart-wrap" style="height:90px;width:90px"><canvas id="incomePie"></canvas></div>
+          </div>
+          <div id="incomeCats"><div class="skeleton" style="height:140px"></div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 5 — TOP SPENDING (Analyst / Admin)
+           API: GET /summary/top-spending
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header" id="topSection">
+        <span class="section-label">5 — Top Spending Categories</span>
+        <span class="section-badge">GET /summary/top-spending</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">Analyst + Admin</span>
+      </div>
+      <div class="top-card" id="topSpending">
+        <div class="skeleton" style="height:200px"></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 6 — RECENT ACTIVITY (All roles)
+           API: GET /summary/recent?limit=10
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header">
+        <span class="section-label">6 — Recent Activity</span>
+        <span class="section-badge">GET /summary/recent</span>
+        <div class="section-header-line"></div>
+        <span style="font-size:.7rem;color:var(--text-muted)">All roles</span>
+      </div>
+      <div class="recent-card" id="recentCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div><div class="cc-title">Recent Transactions</div><div class="cc-sub">Last 10 entries</div></div>
+          <a href="transaction.html" class="btn btn-ghost btn-sm">View all →</a>
+        </div>
+        <div id="recentList"><div class="skeleton" style="height:200px"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           API REFERENCE TABLE
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="section-header" style="margin-top:36px">
+        <span class="section-label">API Reference</span>
+        <div class="section-header-line"></div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="table-wrapper">
+          <table class="api-table">
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Returns</th><th>Access</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">All summaries in one call — income, expenses, balance, categories, monthly, recent, top spending</td>
+                <td><span class="access-tag access-all">All roles</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/overview</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">total_income, total_expenses, balance, savings_rate, record counts</td>
+                <td><span class="access-tag access-all">All roles</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/recent?limit=5</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">List of recent transactions with id, amount, type, category, date, description</td>
+                <td><span class="access-tag access-all">All roles</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/categories</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">{ category: total_spent } — expense totals per category</td>
+                <td><span class="access-tag access-analyst">Analyst + Admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/income-breakdown</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">{ category: total_earned } — income totals per source category</td>
+                <td><span class="access-tag access-analyst">Analyst + Admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/monthly</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">{ "YYYY-MM": { income, expense, balance } } — month-by-month totals</td>
+                <td><span class="access-tag access-analyst">Analyst + Admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/current-month</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">This month's income, expenses, balance, category breakdown</td>
+                <td><span class="access-tag access-analyst">Analyst + Admin</span></td>
+              </tr>
+              <tr>
+                <td><span class="method-badge method-get">GET</span></td>
+                <td><code class="endpoint-code">/summary/top-spending?top_n=5</code></td>
+                <td style="color:var(--text-secondary);font-size:.77rem">[{ category, total, percentage }] — top N expense categories ranked</td>
+                <td><span class="access-tag access-analyst">Analyst + Admin</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); utils.initSidebar();
+
+const user = auth.getUser();
+const role = user.role || 'viewer';
+
+// ── Role setup ────────────────────────────────────────────────
+const ROLES = {
+  viewer:  {cls:'viewer',  icon:'👁️', title:'Viewer — Summary Access',
+    desc:'You can view the financial overview (income, expenses, balance) and recent activity. Category breakdowns and monthly trends require Analyst access.'},
+  analyst: {cls:'analyst', icon:'📊', title:'Analyst — Full Summary Access',
+    desc:'Full access to all 6 summary sections — overview, monthly trends, category breakdown, income sources, top spending, and recent activity.'},
+  admin:   {cls:'admin',   icon:'⚙️', title:'Admin — Full Summary Access',
+    desc:'Full access to all summary sections plus user management capabilities.'},
+};
+const rc = ROLES[role] || ROLES.viewer;
+const banner = document.getElementById('roleBanner');
+banner.className = `role-banner ${rc.cls}`;
+document.getElementById('rbIcon').textContent  = rc.icon;
+document.getElementById('rbTitle').textContent = rc.title;
+document.getElementById('rbDesc').textContent  = rc.desc;
+
+// Show nav items based on role
+if (role === 'analyst' || role === 'admin') {
+  document.getElementById('navAnalytics').style.display = '';
+}
+if (role === 'admin') {
+  document.getElementById('navUsers').style.display = '';
+}
+
+// Hide analyst-only sections for viewer
+if (role === 'viewer') {
+  ['monthSection','monthlySection','catSection','topSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('monthBanner').style.display    = 'none';
+  document.getElementById('monthlyTableWrap').style.display = 'none';
+  const charts2 = document.querySelector('.charts-2');
+  if (charts2) charts2.style.display = 'none';
+  document.getElementById('catGrid').style.display        = 'none';
+  document.getElementById('topSpending').style.display    = 'none';
+}
+
+// ── Chart helpers ─────────────────────────────────────────────
+const tooltipDefaults = {
+  backgroundColor:'rgba(5,8,15,.95)',
+  titleColor:'#EEF2FF',bodyColor:'#7C86A0',
+  borderColor:'rgba(255,255,255,.06)',borderWidth:1,
+  padding:10,cornerRadius:8
+};
+const gridColor = 'rgba(255,255,255,.03)';
+const tickColor = '#7C86A0';
+
+let monthChartInst, balanceChartInst, expPieInst, incPieInst;
+
+function animValue(id, target) {
+  const el=document.getElementById(id);
+  const dur=800,t0=performance.now();
+  function tick(t){const p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);el.textContent=utils.currency(target*e);if(p<1)requestAnimationFrame(tick);else el.textContent=utils.currency(target);}
+  requestAnimationFrame(tick);
+}
+
+// ── LOAD ALL ──────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    // All roles: overview + recent via full summary
+    const summary = await api.getSummary();
+    renderOverview(summary);
+    renderRecent(summary.recent_activity || []);
+
+    if (role !== 'viewer') {
+      renderCurrentMonth(summary.current_month || {});
+      renderMonthlyCharts(summary.monthly_totals || {});
+      renderMonthlyTable(summary.monthly_totals || {});
+      renderCategories(summary.category_breakdown || {}, summary.income_breakdown || {});
+      renderTopSpending(summary.top_spending || []);
+    }
+  } catch(e) {
+    utils.toast('Failed to load summary: '+e.message, 'error');
+  }
+}
+
+// ── 1. OVERVIEW ───────────────────────────────────────────────
+function renderOverview(s) {
+  animValue('ovIncome',  s.total_income   || 0);
+  animValue('ovExpense', s.total_expenses || 0);
+  animValue('ovBalance', s.balance        || 0);
+
+  const savings = s.savings_rate || 0;
+  document.getElementById('ovSavings').textContent = savings + '%';
+
+  document.getElementById('ovIncomeSub').textContent  = `${s.income_count || 0} income records`;
+  document.getElementById('ovExpenseSub').textContent = `${s.expense_count || 0} expense records`;
+  document.getElementById('ovBalanceSub').textContent = (s.balance||0) >= 0 ? '🟢 Positive balance' : '🔴 Negative balance';
+  document.getElementById('ovSavingsSub').textContent = savings >= 20 ? '🎉 Excellent!' : savings > 0 ? '💡 Keep saving' : '⚠️ Review spending';
+}
+
+// ── 2. CURRENT MONTH ──────────────────────────────────────────
+function renderCurrentMonth(cm) {
+  document.getElementById('mbMonth').textContent   = cm.month || '—';
+  document.getElementById('mbIncome').textContent  = utils.currency(cm.income  || 0);
+  document.getElementById('mbExpense').textContent = utils.currency(cm.expenses || 0);
+  document.getElementById('mbBalance').textContent = utils.currency(cm.balance || 0);
+  const tag = document.getElementById('mbTag');
+  const bal = cm.balance || 0;
+  tag.textContent  = bal >= 0 ? '✅ Positive' : '⚠️ Deficit';
+  tag.style.background = bal >= 0 ? 'rgba(0,229,176,.12)' : 'rgba(255,92,124,.12)';
+  tag.style.color      = bal >= 0 ? 'var(--income)' : 'var(--expense)';
+}
+
+// ── 3. MONTHLY CHARTS ─────────────────────────────────────────
+function renderMonthlyCharts(monthly, type='bar') {
+  const mNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const keys    = Object.keys(monthly);
+  const labels  = keys.map(k=>{const p=k.split('-');return p.length===2?mNames[parseInt(p[1])-1]+"'"+p[0].slice(2):k;});
+  const incomes = keys.map(k=>monthly[k].income  || 0);
+  const exps    = keys.map(k=>monthly[k].expense  || 0);
+  const bals    = keys.map(k=>monthly[k].balance  || 0);
+
+  // Income vs Expense chart
+  const ctx1 = document.getElementById('monthChart');
+  if (monthChartInst) monthChartInst.destroy();
+  monthChartInst = new Chart(ctx1, {type, data:{labels, datasets:[
+    {label:'Income',   data:incomes, backgroundColor:type==='bar'?'rgba(0,229,176,.65)':'rgba(0,229,176,.12)', borderColor:'#00E5B0',borderWidth:2,borderRadius:type==='bar'?5:0,tension:.4,fill:type==='line',pointRadius:3,pointBackgroundColor:'#00E5B0'},
+    {label:'Expenses', data:exps,   backgroundColor:type==='bar'?'rgba(255,92,124,.65)':'rgba(255,92,124,.1)', borderColor:'#FF5C7C',borderWidth:2,borderRadius:type==='bar'?5:0,tension:.4,fill:type==='line',pointRadius:3,pointBackgroundColor:'#FF5C7C'},
+  ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:tickColor,font:{size:10}}},tooltip:{...tooltipDefaults,callbacks:{label:c=>` ${c.dataset.label}: ${utils.currency(c.raw)}`}}},scales:{x:{grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}}}}});
+
+  // Balance chart
+  const ctx2 = document.getElementById('balanceChart');
+  if (balanceChartInst) balanceChartInst.destroy();
+  balanceChartInst = new Chart(ctx2, {type:'bar', data:{labels, datasets:[
+    {label:'Balance', data:bals, backgroundColor:bals.map(v=>v>=0?'rgba(79,142,247,.65)':'rgba(255,92,124,.65)'), borderColor:bals.map(v=>v>=0?'#4F8EF7':'#FF5C7C'),borderWidth:2,borderRadius:5},
+  ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tooltipDefaults,callbacks:{label:c=>` Balance: ${utils.currency(c.raw)}`}}},scales:{x:{grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:tickColor,font:{size:10}}}}}});
+}
+
+function switchMonthChart(type, btn) {
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  api.getSummary().then(s => renderMonthlyCharts(s.monthly_totals||{}, type));
+}
+
+// ── 3b. MONTHLY TABLE ────────────────────────────────────────
+function renderMonthlyTable(monthly) {
+  const mNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rows = Object.entries(monthly).reverse().map(([key, val]) => {
+    const parts = key.split('-');
+    const label = parts.length === 2 ? mNames[parseInt(parts[1])-1] + ' ' + parts[0] : key;
+    const sr    = val.income > 0 ? Math.round(((val.income - val.expense) / val.income)*100) : 0;
+    const balColor = val.balance >= 0 ? 'var(--income)' : 'var(--expense)';
+    return `<tr>
+      <td style="font-weight:600;font-size:.82rem">${label}</td>
+      <td style="color:var(--income);font-family:var(--font-display);font-weight:700">${utils.currency(val.income||0)}</td>
+      <td style="color:var(--expense);font-family:var(--font-display);font-weight:700">${utils.currency(val.expense||0)}</td>
+      <td style="color:${balColor};font-family:var(--font-display);font-weight:700">${utils.currency(val.balance||0)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;height:5px;background:var(--bg-input);border-radius:99px;overflow:hidden">
+          <div style="width:${Math.min(sr,100)}%;height:100%;background:${utils.progressColor(100-sr)};border-radius:99px"></div>
+        </div>
+        <span style="font-size:.75rem;font-weight:700;color:var(--text-secondary)">${sr}%</span>
+      </div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('monthlyTable').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">No monthly data yet</td></tr>';
+}
+
+// ── 4. CATEGORIES ────────────────────────────────────────────
+function renderCategories(expCats, incCats) {
+  // Expense categories list
+  const expEntries = Object.entries(expCats).sort((a,b)=>b[1]-a[1]);
+  const expTotal   = expEntries.reduce((s,[,v])=>s+v,0) || 1;
+  document.getElementById('expenseCats').innerHTML = expEntries.length
+    ? expEntries.slice(0,7).map(([cat,amt])=>`
+      <div class="cat-row">
+        <span class="cat-icon">${utils.catIcon(cat)}</span>
+        <span class="cat-name">${cat}</span>
+        <div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:${utils.percent(amt,expTotal)}%;background:${utils.catColor(cat)}"></div></div>
+        <span class="cat-amount" style="color:var(--expense)">${utils.currency(amt)}</span>
+        <span class="cat-pct">${utils.percent(amt,expTotal)}%</span>
+      </div>`).join('')
+    : '<p style="color:var(--text-muted);font-size:.8rem;padding:12px 0">No expense data</p>';
+
+  // Income categories list
+  const incEntries = Object.entries(incCats).sort((a,b)=>b[1]-a[1]);
+  const incTotal   = incEntries.reduce((s,[,v])=>s+v,0) || 1;
+  document.getElementById('incomeCats').innerHTML = incEntries.length
+    ? incEntries.slice(0,7).map(([cat,amt])=>`
+      <div class="cat-row">
+        <span class="cat-icon">${utils.catIcon(cat)}</span>
+        <span class="cat-name">${cat}</span>
+        <div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:${utils.percent(amt,incTotal)}%;background:${utils.catColor(cat)}"></div></div>
+        <span class="cat-amount" style="color:var(--income)">${utils.currency(amt)}</span>
+        <span class="cat-pct">${utils.percent(amt,incTotal)}%</span>
+      </div>`).join('')
+    : '<p style="color:var(--text-muted);font-size:.8rem;padding:12px 0">No income data</p>';
+
+  // Mini pie charts
+  renderMiniPie('expensePie', expEntries.slice(0,5), 'expense');
+  renderMiniPie('incomePie',  incEntries.slice(0,5), 'income');
+}
+
+function renderMiniPie(canvasId, entries, type) {
+  const ctx = document.getElementById(canvasId);
+  const existing = type === 'expense' ? expPieInst : incPieInst;
+  if (existing) existing.destroy();
+  if (!entries.length) return;
+  const labels = entries.map(([k])=>k);
+  const data   = entries.map(([,v])=>v);
+  const colors = labels.map(l=>utils.catColor(l));
+  const inst = new Chart(ctx, {type:'doughnut', data:{labels, datasets:[{data,backgroundColor:colors.map(c=>c+'CC'),borderColor:colors,borderWidth:1.5,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(5,8,15,.95)',callbacks:{label:c=>` ${c.label}: ${utils.currency(c.raw)}`}}}}});
+  if (type==='expense') expPieInst=inst; else incPieInst=inst;
+}
+
+// ── 5. TOP SPENDING ───────────────────────────────────────────
+function renderTopSpending(top) {
+  if (!top.length) {
+    document.getElementById('topSpending').innerHTML='<p style="color:var(--text-muted);font-size:.8rem;padding:12px">No spending data yet</p>';
+    return;
+  }
+  document.getElementById('topSpending').innerHTML = `
+    <div style="margin-bottom:14px"><div class="cc-title">Top Spending Categories</div><div class="cc-sub">Ranked by total expense with percentage</div></div>
+    ${top.map((item,i)=>`
+      <div class="top-row">
+        <span class="top-rank">#${i+1}</span>
+        <span style="font-size:16px">${utils.catIcon(item.category)}</span>
+        <span class="top-name">${item.category}</span>
+        <div class="top-bar-wrap"><div class="top-bar-fill" style="width:${item.percentage}%;background:${utils.catColor(item.category)}"></div></div>
+        <span class="top-amount">${utils.currency(item.total)}</span>
+        <span class="top-pct">${item.percentage}%</span>
+      </div>`).join('')}`;
+}
+
+// ── 6. RECENT ACTIVITY ────────────────────────────────────────
+function renderRecent(txns) {
+  const el = document.getElementById('recentList');
+  if (!txns.length) {
+    el.innerHTML='<div class="empty-state"><span class="empty-icon">💳</span><h3>No transactions yet</h3><p>Add your first transaction</p></div>';
+    return;
+  }
+  el.innerHTML = txns.slice(0,10).map(t=>`
+    <div class="recent-item">
+      <div class="ri-icon" style="background:${utils.catColor(t.category)}22">${utils.catIcon(t.category)}</div>
+      <div class="ri-meta">
+        <div class="ri-name">${t.description||t.category||'Transaction'}</div>
+        <div class="ri-date">${utils.date(t.date)} · <span class="badge ${t.type==='income'?'badge-income':'badge-expense'}">${t.type}</span> · ${t.category}</div>
+      </div>
+      <div class="ri-amt" style="color:${t.type==='income'?'var(--income)':'var(--expense)'}">${t.type==='income'?'+':'-'}${utils.currency(t.amount)}</div>
+    </div>`).join('');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+async function exportSummary() {
+  try {
+    const s = await api.getSummary();
+    const rows = [
+      ['FinTrack — Financial Summary'],
+      ['Generated', new Date().toLocaleString('en-IN')],
+      [''],
+      ['OVERVIEW'],
+      ['Total Income', s.total_income],
+      ['Total Expenses', s.total_expenses],
+      ['Net Balance', s.balance],
+      ['Savings Rate', s.savings_rate + '%'],
+      [''],
+      ['CATEGORY BREAKDOWN'],
+      ...Object.entries(s.category_breakdown||{}).map(([k,v])=>[k,v]),
+      [''],
+      ['MONTHLY TOTALS'],
+      ['Month','Income','Expense','Balance'],
+      ...Object.entries(s.monthly_totals||{}).map(([k,v])=>[k,v.income,v.expense,v.balance]),
+    ];
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'fintrack_summary.csv'; a.click();
+    utils.toast('Summary exported as CSV','success');
+  } catch(e) { utils.toast('Export failed','error'); }
+}
+
+// Sidebar search
+document.getElementById('sidebarSearch').addEventListener('input', utils.debounce(e=>{
+  const q=e.target.value.trim();
+  if(q.length>1) window.location.href=`transaction.html?search=${encodeURIComponent(q)}`;
+},400));
+document.getElementById('globalSearch').addEventListener('input', utils.debounce(e=>{
+  const q=e.target.value.trim();
+  if(q.length>1) window.location.href=`transaction.html?search=${encodeURIComponent(q)}`;
+},400));
+
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analytics — FinTrack</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.a-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden}
+.a-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.a-stat:nth-child(1)::before{background:linear-gradient(90deg,var(--income),transparent)}
+.a-stat:nth-child(2)::before{background:linear-gradient(90deg,var(--expense),transparent)}
+.a-stat:nth-child(3)::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.a-stat:nth-child(4)::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.a-stat:nth-child(5)::before{background:linear-gradient(90deg,var(--warning),transparent)}
+.a-stat:nth-child(6)::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.as-val{font-family:var(--font-display);font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.as-lbl{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+.as-sub{font-size:.72rem;color:var(--text-secondary);margin-top:4px}
+.charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.cc-title{font-family:var(--font-display);font-size:.9rem;font-weight:700;margin-bottom:4px}
+.cc-sub{font-size:.7rem;color:var(--text-secondary);margin-bottom:16px}
+.chart-wrap{position:relative;height:240px}
+.insights-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.insight-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;align-items:flex-start;gap:12px}
+.insight-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.insight-body strong{display:block;font-size:.85rem;font-weight:700;margin-bottom:3px}
+.insight-body span{font-size:.78rem;color:var(--text-secondary);line-height:1.5}
+.cat-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+.cat-row:last-child{border-bottom:none}
+.cat-bar-wrap{flex:1;height:6px;background:var(--bg-input);border-radius:99px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:99px}
+
+/* ── Analytics-only Filter Toolbar ── */
+.analytics-filters{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:16px 18px;
+  margin-bottom:20px;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:12px;
+}
+.af-group{display:flex;flex-direction:column;gap:5px}
+.af-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--text-secondary)}
+.af-select,.af-input{
+  background:var(--bg-input);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  font-size:.8rem;
+  padding:7px 10px;
+  outline:none;
+  cursor:pointer;
+  transition:border-color var(--tr);
+}
+.af-select:focus,.af-input:focus{border-color:var(--accent)}
+.af-type-row{display:flex;gap:5px}
+.af-type-btn{
+  flex:1;padding:7px 10px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:var(--bg-input);
+  color:var(--text-secondary);
+  font-size:.78rem;font-weight:600;
+  cursor:pointer;transition:all var(--tr);white-space:nowrap;
+}
+.af-type-btn.active-all    {background:rgba(79,142,247,.15);border-color:var(--blue);color:var(--blue)}
+.af-type-btn.active-income {background:rgba(0,229,176,.12);border-color:var(--income);color:var(--income)}
+.af-type-btn.active-expense{background:rgba(255,92,124,.12);border-color:var(--expense);color:var(--expense)}
+.af-actions{display:flex;gap:8px;align-items:flex-end;margin-left:auto}
+.filter-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--accent-dim);border:1px solid var(--border-accent);
+  border-radius:99px;padding:3px 10px;
+  font-size:.72rem;font-weight:600;color:var(--accent);margin-left:8px;
+}
+.filter-active-bar{
+  display:none;align-items:center;gap:8px;
+  background:rgba(0,229,176,.06);border:1px solid rgba(0,229,176,.2);
+  border-radius:var(--radius-sm);padding:8px 14px;
+  margin-bottom:16px;font-size:.8rem;color:var(--accent);font-weight:600;
+}
+.filter-active-bar.show{display:flex}
+@media(max-width:800px){.charts-2{grid-template-columns:1fr}.af-actions{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <div class="sidebar-search"><div class="sidebar-search-inner"><span class="ss-icon">🔍</span><input type="text" placeholder="Search..." id="sidebarSearch"></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <a class="nav-item active nav-analytics" href="analytics.html"><span class="nav-icon">📈</span> Analytics</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item nav-users" href="users.html" style="display:none"><span class="nav-icon">👥</span> Users <span class="nav-badge" id="userCount">0</span></a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-users sidebar-users-section" style="display:none"><div class="sidebar-users-title">All Users</div><div id="sidebarUserList"></div></div>
+    <div class="sidebar-footer"><div class="user-card"><div class="user-avatar" id="userAvatar">M</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div></div></div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Analytics</div><div class="navbar-subtitle">Detailed financial insights</div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="exportFilteredCSV()">📥 Export</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">✕ Reset</button>
+      </div>
+    </nav>
+
+    <div class="page-content">
+
+      <!-- Role Banner -->
+      <div class="role-banner" id="roleBanner">
+        <span class="rb-icon" id="rbIcon">📊</span>
+        <div class="rb-body"><strong id="rbTitle">Analyst Access</strong><span id="rbDesc">Full analytics and insights</span></div>
+      </div>
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Financial Analytics</div>
+          <div class="page-desc">
+            Deep dive into your financial data
+            <span class="filter-badge" id="filterBadge" style="display:none">🔍 Filters active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Analytics-only Filter Toolbar ── -->
+      <div class="analytics-filters">
+
+        <div class="af-group">
+          <span class="af-label">From Date</span>
+          <input type="date" class="af-input" id="afFrom" onchange="applyFilters()">
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">To Date</span>
+          <input type="date" class="af-input" id="afTo" onchange="applyFilters()">
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">Quick Period</span>
+          <select class="af-select" id="afPeriod" onchange="setQuickPeriod()">
+            <option value="">All time</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 3 months</option>
+            <option value="180">Last 6 months</option>
+            <option value="365">Last 12 months</option>
+            <option value="thismonth">This month</option>
+            <option value="lastmonth">Last month</option>
+            <option value="thisyear">This year</option>
+          </select>
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">Category</span>
+          <select class="af-select" id="afCat" onchange="applyFilters()">
+            <option value="">All Categories</option>
+            <option>Food</option><option>Rent</option><option>Salary</option>
+            <option>Travel</option><option>Shopping</option><option>Health</option>
+            <option>Education</option><option>Entertainment</option>
+            <option>Utilities</option><option>Investment</option><option>Other</option>
+          </select>
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">Type</span>
+          <div class="af-type-row">
+            <button class="af-type-btn active-all" id="typeBtnAll"     onclick="setType('all')">All</button>
+            <button class="af-type-btn"             id="typeBtnIncome"  onclick="setType('income')">📈 Income</button>
+            <button class="af-type-btn"             id="typeBtnExpense" onclick="setType('expense')">📉 Expense</button>
+          </div>
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">Min Amount (₹)</span>
+          <input type="number" class="af-input" id="afMin" placeholder="0" min="0" style="width:110px" onchange="applyFilters()">
+        </div>
+
+        <div class="af-group">
+          <span class="af-label">Max Amount (₹)</span>
+          <input type="number" class="af-input" id="afMax" placeholder="Any" min="0" style="width:110px" onchange="applyFilters()">
+        </div>
+
+        <div class="af-actions">
+          <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply</button>
+          <button class="btn btn-ghost btn-sm"   onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <!-- Active filter summary bar -->
+      <div class="filter-active-bar" id="activeBar">
+        <span>🔍</span>
+        <span id="activeBarText">Showing filtered results</span>
+        <span style="margin-left:auto;cursor:pointer;font-size:.78rem;opacity:.7" onclick="resetFilters()">✕ Clear</span>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="analytics-grid stagger" id="metricsGrid">
+        <div class="a-stat"><div class="as-val" id="mIncome"  style="color:var(--income)">—</div><div class="as-lbl">Total Income</div><div class="as-sub" id="mIncomeSub">—</div></div>
+        <div class="a-stat"><div class="as-val" id="mExpense" style="color:var(--expense)">—</div><div class="as-lbl">Total Expenses</div><div class="as-sub" id="mExpenseSub">—</div></div>
+        <div class="a-stat"><div class="as-val" id="mBalance" style="color:var(--blue)">—</div><div class="as-lbl">Net Balance</div><div class="as-sub" id="mBalanceSub">—</div></div>
+        <div class="a-stat"><div class="as-val" id="mSavings" style="color:var(--accent)">—</div><div class="as-lbl">Savings Rate</div><div class="as-sub">Income retained</div></div>
+        <div class="a-stat"><div class="as-val" id="mAvgExp"  style="color:var(--warning)">—</div><div class="as-lbl">Avg Monthly Expense</div><div class="as-sub" id="mAvgSub">—</div></div>
+        <div class="a-stat"><div class="as-val" id="mTopCat"  style="color:var(--purple)">—</div><div class="as-lbl">Top Spend Category</div><div class="as-sub" id="mTopSub">—</div></div>
+      </div>
+
+      <!-- Insights -->
+      <div class="insights-row" id="insightsRow"></div>
+
+      <!-- Charts -->
+      <div class="charts-2">
+        <div class="chart-card">
+          <div class="cc-title">Monthly Income vs Expenses</div>
+          <div class="cc-sub">Trend over filtered period</div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Expense Distribution</div>
+          <div class="cc-sub">Category breakdown</div>
+          <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+          <div class="legend" id="distLegend"></div>
+        </div>
+      </div>
+
+      <!-- Top Categories -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Top Spending Categories</div><div class="card-subtitle">Ranked by total spend</div></div>
+        </div>
+        <div id="topCats"><div class="skeleton" style="height:200px"></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/sidebar.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); Sidebar.init();
+
+const user = auth.getUser();
+const role = user.role || 'viewer';
+
+if (role === 'viewer') {
+  utils.toast('Analytics requires Analyst or Admin access', 'error');
+  setTimeout(() => window.location.href = 'dashboard.html', 1500);
+}
+
+const rc = role === 'admin'
+  ? { cls:'admin',   icon:'⚙️', title:'Admin — Full Analytics', desc:'Complete analytics access with all data insights.' }
+  : { cls:'analyst', icon:'📊', title:'Analyst — Analytics Dashboard', desc:'Full analytics, filters, trends and category insights.' };
+
+const banner = document.getElementById('roleBanner');
+banner.className = `role-banner ${rc.cls}`;
+document.getElementById('rbIcon').textContent  = rc.icon;
+document.getElementById('rbTitle').textContent = rc.title;
+document.getElementById('rbDesc').textContent  = rc.desc;
+
+// ── State ────────────────────────────────────────────────
+let allTxns    = [];   // raw full list — never mutated
+let activeType = 'all';
+let trendChartInst, distChartInst;
+
+// ── Filter helpers ───────────────────────────────────────
+function getFilteredTxns() {
+  const from = document.getElementById('afFrom').value;
+  const to   = document.getElementById('afTo').value;
+  const cat  = document.getElementById('afCat').value.toLowerCase();
+  const minA = parseFloat(document.getElementById('afMin').value) || 0;
+  const maxA = parseFloat(document.getElementById('afMax').value) || Infinity;
+
+  return allTxns.filter(t => {
+    const d = t.date ? t.date.slice(0,10) : '';
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    if (cat  && (t.category||'').toLowerCase() !== cat) return false;
+    if (activeType !== 'all' && t.type !== activeType) return false;
+    const amt = parseFloat(t.amount) || 0;
+    if (amt < minA) return false;
+    if (amt > maxA) return false;
+    return true;
+  });
+}
+
+function isFiltered() {
+  return !!(
+    document.getElementById('afFrom').value ||
+    document.getElementById('afTo').value   ||
+    document.getElementById('afCat').value  ||
+    document.getElementById('afMin').value  ||
+    document.getElementById('afMax').value  ||
+    activeType !== 'all'
+  );
+}
+
+function setType(t) {
+  activeType = t;
+  document.getElementById('typeBtnAll').className     = 'af-type-btn' + (t==='all'     ? ' active-all'     : '');
+  document.getElementById('typeBtnIncome').className  = 'af-type-btn' + (t==='income'   ? ' active-income'  : '');
+  document.getElementById('typeBtnExpense').className = 'af-type-btn' + (t==='expense'  ? ' active-expense' : '');
+  applyFilters();
+}
+
+function setQuickPeriod() {
+  const v   = document.getElementById('afPeriod').value;
+  const now = new Date();
+  let from  = '', to = '';
+
+  if (v === 'thismonth') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    to   = now.toISOString().slice(0,10);
+  } else if (v === 'lastmonth') {
+    const y = now.getMonth() === 0 ? now.getFullYear()-1 : now.getFullYear();
+    const m = now.getMonth() === 0 ? 11 : now.getMonth()-1;
+    from = new Date(y, m, 1).toISOString().slice(0,10);
+    to   = new Date(y, m+1, 0).toISOString().slice(0,10);
+  } else if (v === 'thisyear') {
+    from = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
+    to   = now.toISOString().slice(0,10);
+  } else if (v !== '') {
+    const d = new Date(now); d.setDate(d.getDate() - parseInt(v));
+    from = d.toISOString().slice(0,10);
+    to   = now.toISOString().slice(0,10);
+  }
+
+  document.getElementById('afFrom').value = from;
+  document.getElementById('afTo').value   = to;
+  applyFilters();
+}
+
+function applyFilters() {
+  const txns     = getFilteredTxns();
+  const filtered = isFiltered();
+
+  document.getElementById('activeBar').classList.toggle('show', filtered);
+  document.getElementById('filterBadge').style.display = filtered ? '' : 'none';
+
+  if (filtered) {
+    const from = document.getElementById('afFrom').value;
+    const to   = document.getElementById('afTo').value;
+    const parts = [];
+    if (from || to) parts.push(`${from||'start'} → ${to||'today'}`);
+    if (activeType !== 'all') parts.push(activeType);
+    if (document.getElementById('afCat').value) parts.push(document.getElementById('afCat').value);
+    if (document.getElementById('afMin').value) parts.push(`min ₹${document.getElementById('afMin').value}`);
+    if (document.getElementById('afMax').value) parts.push(`max ₹${document.getElementById('afMax').value}`);
+    document.getElementById('activeBarText').textContent =
+      `${txns.length} transaction${txns.length!==1?'s':''} · ${parts.join(' · ')}`;
+  }
+
+  renderAll(txns);
+}
+
+function resetFilters() {
+  document.getElementById('afFrom').value   = '';
+  document.getElementById('afTo').value     = '';
+  document.getElementById('afCat').value    = '';
+  document.getElementById('afMin').value    = '';
+  document.getElementById('afMax').value    = '';
+  document.getElementById('afPeriod').value = '';
+  activeType = 'all';
+  document.getElementById('typeBtnAll').className     = 'af-type-btn active-all';
+  document.getElementById('typeBtnIncome').className  = 'af-type-btn';
+  document.getElementById('typeBtnExpense').className = 'af-type-btn';
+  document.getElementById('activeBar').classList.remove('show');
+  document.getElementById('filterBadge').style.display = 'none';
+  renderAll(allTxns);
+}
+
+// ── Master render (works on any subset of transactions) ──
+function renderAll(txns) {
+  const income  = txns.filter(t=>t.type==='income') .reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const expense = txns.filter(t=>t.type==='expense').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const balance = income - expense;
+  const sr      = income > 0 ? Math.round(((income-expense)/income)*100) : 0;
+
+  // Monthly buckets from filtered txns
+  const monthly = {};
+  txns.forEach(t => {
+    if (!t.date) return;
+    const key = t.date.slice(0,7);
+    if (!monthly[key]) monthly[key] = { income:0, expense:0 };
+    monthly[key][t.type==='income'?'income':'expense'] += parseFloat(t.amount||0);
+  });
+  const months = Object.keys(monthly).sort();
+  const avgExp = months.length ? months.reduce((s,k)=>s+monthly[k].expense,0)/months.length : 0;
+  const avgInc = months.length ? months.reduce((s,k)=>s+monthly[k].income, 0)/months.length : 0;
+
+  // Category breakdown (expense only)
+  const catMap = {};
+  txns.filter(t=>t.type==='expense').forEach(t => {
+    const c = t.category || 'Other';
+    catMap[c] = (catMap[c]||0) + parseFloat(t.amount||0);
+  });
+  const cats   = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const topCat = cats[0];
+
+  // Metrics
+  document.getElementById('mIncome').textContent     = utils.currency(income);
+  document.getElementById('mIncomeSub').textContent  = `${txns.filter(t=>t.type==='income').length} income records`;
+  document.getElementById('mExpense').textContent    = utils.currency(expense);
+  document.getElementById('mExpenseSub').textContent = `${txns.filter(t=>t.type==='expense').length} expense records`;
+  document.getElementById('mBalance').textContent    = utils.currency(balance);
+  document.getElementById('mBalanceSub').textContent = balance >= 0 ? '🟢 Positive' : '🔴 Negative';
+  document.getElementById('mSavings').textContent    = sr + '%';
+  document.getElementById('mAvgExp').textContent     = utils.currency(Math.round(avgExp));
+  document.getElementById('mAvgSub').textContent     = `Avg income ${utils.currency(Math.round(avgInc))}/mo`;
+  document.getElementById('mTopCat').textContent     = topCat ? topCat[0] : '—';
+  document.getElementById('mTopSub').textContent     = topCat ? utils.currency(topCat[1]) : '—';
+
+  // Insights
+  const insights = [];
+  if (txns.length === 0) {
+    insights.push({icon:'🔍', title:'No data for this filter', desc:'Try widening your date range or resetting the filters.'});
+  } else {
+    if      (sr >= 20)   insights.push({icon:'🎉', title:'Great savings!', desc:`You're saving ${sr}% of your income — excellent financial health.`});
+    else if (sr >  0)    insights.push({icon:'💡', title:'Savings tip', desc:`Your savings rate is ${sr}%. Try reducing your top spending category.`});
+    else if (income > 0) insights.push({icon:'⚠️', title:'Over budget', desc:'Your expenses exceed your income. Review your spending categories.'});
+    if (topCat)          insights.push({icon:'📊', title:`Top category: ${topCat[0]}`, desc:`${topCat[0]} accounts for ${utils.currency(topCat[1])} of expenses in this period.`});
+    if (avgExp > 0)      insights.push({icon:'📅', title:'Monthly average', desc:`You spend an average of ${utils.currency(Math.round(avgExp))} per month across ${months.length} month${months.length!==1?'s':''}.`});
+    if (cats.length >= 3) insights.push({icon:'🗂️', title:`${cats.length} categories tracked`, desc:`${cats[0][0]}, ${cats[1][0]}, and ${cats[2][0]} are the top 3 spending categories.`});
+  }
+  document.getElementById('insightsRow').innerHTML = insights.map(i=>`
+    <div class="insight-card">
+      <span class="insight-icon">${i.icon}</span>
+      <div class="insight-body"><strong>${i.title}</strong><span>${i.desc}</span></div>
+    </div>`).join('');
+
+  renderTrend(monthly, months);
+  renderDist(catMap);
+  renderTopCats(cats);
+}
+
+// ── Chart helpers ────────────────────────────────────────
+function renderTrend(monthly, months) {
+  const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const labels  = months.map(k=>{ const p=k.split('-'); return mNames[parseInt(p[1])-1]+"'"+p[0].slice(2); });
+  const inc = months.map(k=>monthly[k].income);
+  const exp = months.map(k=>monthly[k].expense);
+  const ctx = document.getElementById('trendChart');
+  if (trendChartInst) trendChartInst.destroy();
+  trendChartInst = new Chart(ctx, {type:'bar', data:{labels, datasets:[
+    {label:'Income',  data:inc, backgroundColor:'rgba(0,229,176,.65)', borderColor:'#00E5B0', borderWidth:1.5, borderRadius:4},
+    {label:'Expenses',data:exp, backgroundColor:'rgba(255,92,124,.65)',borderColor:'#FF5C7C', borderWidth:1.5, borderRadius:4}
+  ]}, options:{responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{color:'#7C86A0',font:{size:11}}}, tooltip:{backgroundColor:'rgba(5,8,15,.95)',callbacks:{label:c=>` ${c.dataset.label}: ${utils.currency(c.raw)}`}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#7C86A0',font:{size:10}}}, y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#7C86A0',font:{size:10}}}}}});
+}
+
+function renderDist(catMap) {
+  const labels  = Object.keys(catMap);
+  const amounts = Object.values(catMap);
+  const colors  = labels.map(l=>utils.catColor(l));
+  const ctx = document.getElementById('distChart');
+  if (distChartInst) distChartInst.destroy();
+  if (!labels.length) {
+    document.getElementById('distLegend').innerHTML = '<p style="color:var(--text-muted);font-size:.78rem;text-align:center;padding:20px 0">No expense data</p>';
+    return;
+  }
+  distChartInst = new Chart(ctx, {type:'doughnut', data:{labels, datasets:[{data:amounts, backgroundColor:colors.map(c=>c+'CC'), borderColor:colors, borderWidth:2, hoverOffset:8}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{legend:{display:false}, tooltip:{backgroundColor:'rgba(5,8,15,.95)',callbacks:{label:c=>` ${c.label}: ${utils.currency(c.raw)}`}}}}});
+  document.getElementById('distLegend').innerHTML = labels.map((l,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l}</div>`).join('');
+}
+
+function renderTopCats(cats) {
+  if (!cats.length) {
+    document.getElementById('topCats').innerHTML = '<p style="color:var(--text-muted);font-size:.8rem;padding:12px">No expense data for this filter</p>';
+    return;
+  }
+  const total = cats.reduce((s,[,v])=>s+v,0);
+  const max   = cats[0][1];
+  document.getElementById('topCats').innerHTML = cats.slice(0,8).map(([cat,amt],i)=>`
+    <div class="cat-row">
+      <span style="font-size:.78rem;font-weight:700;color:var(--text-muted);min-width:20px">#${i+1}</span>
+      <span style="font-size:15px">${utils.catIcon(cat)}</span>
+      <span style="font-size:.83rem;font-weight:600;min-width:90px">${cat}</span>
+      <div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:${utils.percent(amt,max)}%;background:${utils.catColor(cat)}"></div></div>
+      <span style="font-size:.8rem;font-weight:700;font-family:var(--font-display);color:var(--expense);min-width:75px;text-align:right">${utils.currency(amt)}</span>
+      <span style="font-size:.7rem;color:var(--text-muted);min-width:36px;text-align:right">${utils.percent(amt,total)}%</span>
+    </div>`).join('');
+}
+
+// ── Export filtered data as CSV ──────────────────────────
+function exportFilteredCSV() {
+  const txns = getFilteredTxns();
+  if (!txns.length) { utils.toast('No data to export with current filters', 'warning'); return; }
+  const rows = [['Date','Type','Category','Amount','Description']];
+  txns.forEach(t => rows.push([t.date, t.type, t.category||'', t.amount, t.description||'']));
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `analytics_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  utils.toast(`Exported ${txns.length} transactions`, 'success');
+}
+
+// ── Boot ─────────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    allTxns = await api.getTransactions() || [];
+    renderAll(allTxns);
+  } catch(e) {
+    utils.toast('Failed to load analytics: ' + e.message, 'error');
+  }
+}
+
+loadAnalytics();
+</script>
+</body>
+</html>

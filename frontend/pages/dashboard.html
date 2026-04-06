@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — FinTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+:root{--font-display:'Cabinet Grotesk',sans-serif;--font-body:'Instrument Sans',sans-serif}
+.role-banner{display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:12px;margin-bottom:22px;font-size:.82rem;font-weight:600;border:1px solid}
+.role-banner.viewer{background:rgba(79,142,247,.08);border-color:rgba(79,142,247,.25);color:var(--blue)}
+.role-banner.analyst{background:rgba(155,109,255,.08);border-color:rgba(155,109,255,.25);color:var(--purple)}
+.role-banner.admin{background:rgba(0,229,176,.08);border-color:rgba(0,229,176,.25);color:var(--accent)}
+.role-banner-icon{font-size:20px}
+.role-banner-text strong{display:block;font-size:.88rem}
+.role-banner-text span{font-weight:400;opacity:.8;font-size:.78rem}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;cursor:default}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.stat-card.income{background:linear-gradient(135deg,rgba(0,229,176,.14),rgba(0,229,176,.03));border:1px solid rgba(0,229,176,.2)}
+.stat-card.expense{background:linear-gradient(135deg,rgba(255,92,124,.14),rgba(255,92,124,.03));border:1px solid rgba(255,92,124,.2)}
+.stat-card.balance{background:linear-gradient(135deg,rgba(79,142,247,.14),rgba(79,142,247,.03));border:1px solid rgba(79,142,247,.2)}
+.stat-card.budgets{background:linear-gradient(135deg,rgba(255,184,48,.14),rgba(255,184,48,.03));border:1px solid rgba(255,184,48,.2)}
+.stat-glow{position:absolute;top:-40px;right:-40px;width:110px;height:110px;border-radius:50%;filter:blur(45px);opacity:.35;pointer-events:none}
+.stat-card.income .stat-glow{background:#00E5B0}.stat-card.expense .stat-glow{background:#FF5C7C}
+.stat-card.balance .stat-glow{background:#4F8EF7}.stat-card.budgets .stat-glow{background:#FFB830}
+.stat-emoji{font-size:26px;display:block;margin-bottom:10px}
+.stat-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;opacity:.55;margin-bottom:5px}
+.stat-val{font-family:var(--font-display);font-size:1.65rem;font-weight:900;line-height:1;margin-bottom:6px}
+.stat-card.income .stat-val{color:#00E5B0}.stat-card.expense .stat-val{color:#FF5C7C}
+.stat-card.balance .stat-val{color:#4F8EF7}.stat-card.budgets .stat-val{color:#FFB830}
+.stat-hint{font-size:.72rem;opacity:.55}
+.charts-row{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:18px}
+.gcrd{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;padding:20px}
+.gcrd-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.gcrd-title{font-family:var(--font-display);font-size:.95rem;font-weight:700}
+.gcrd-sub{font-size:.72rem;color:var(--text-secondary);margin-top:2px}
+.chart-wrap{position:relative;height:210px}
+.ctabs{display:flex;gap:3px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px}
+.ctab{padding:5px 11px;border-radius:6px;border:none;background:none;color:var(--text-secondary);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s}
+.ctab.active{background:var(--bg-surface);color:var(--text-primary)}
+.bottom-row{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+.recent-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.recent-item:last-child{border-bottom:none;padding-bottom:0}
+.r-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.r-meta{flex:1;min-width:0}
+.r-name{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.r-date{font-size:.7rem;color:var(--text-secondary)}
+.r-amt{font-family:var(--font-display);font-size:.92rem;font-weight:800;white-space:nowrap}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 8px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s;text-decoration:none}
+.qbtn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);transform:translateY(-2px)}
+.qbtn .qi{font-size:20px}.qbtn .ql{font-size:.7rem;font-weight:600;color:var(--text-secondary);text-align:center}
+.greet-row{margin-bottom:22px}
+.greet-time{font-size:.78rem;color:var(--text-secondary);margin-bottom:3px}
+.greet-title{font-family:var(--font-display);font-size:1.6rem;font-weight:900;line-height:1.15}
+.greet-title .acc{color:var(--accent)}
+@media(max-width:1200px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.charts-row,.bottom-row{grid-template-columns:1fr}}
+@media(max-width:580px){.stat-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <a class="nav-item nav-analytics" href="analytics.html" style="display:none"><span class="nav-icon">📈</span> Analytics</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item nav-users" href="users.html" style="display:none"><span class="nav-icon">👥</span> Users <span class="nav-badge" id="userCount">0</span></a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card" onclick="window.location.href='profile.html'">
+        <div class="user-avatar" id="userAvatar">M</div>
+        <div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div>
+        <span style="color:var(--text-muted);font-size:12px">⚙️</span>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Dashboard</div><div class="navbar-subtitle" id="dateDisplay"></div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-search"><span class="search-icon">🔍</span><input type="text" placeholder="Search transactions..." id="globalSearch"></div>
+      <div class="navbar-actions">
+        <div class="icon-btn" title="Notifications"><span>🔔</span><span class="notif-dot"></span></div>
+        <div class="icon-btn" onclick="loadDashboard()" title="Refresh">🔄</div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+
+      <!-- Greeting -->
+      <div class="greet-row">
+        <div class="greet-time" id="greetTime">Good evening</div>
+        <div class="greet-title">Hello, <span class="acc" id="greetName">User</span> — Financial Overview 👋</div>
+      </div>
+
+      <!-- Role Banner -->
+      <div class="role-banner viewer" id="roleBanner">
+        <span class="role-banner-icon">👁️</span>
+        <div class="role-banner-text">
+          <strong id="roleBannerTitle">Viewer Mode</strong>
+          <span id="roleBannerDesc">Read-only access to records and summaries</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid stagger">
+        <div class="stat-card income"><div class="stat-glow"></div><span class="stat-emoji">📈</span><div class="stat-lbl">Total Income</div><div class="stat-val" id="totalIncome">₹0.00</div><div class="stat-hint" id="incomeSub">All time earnings</div></div>
+        <div class="stat-card expense"><div class="stat-glow"></div><span class="stat-emoji">📉</span><div class="stat-lbl">Total Expenses</div><div class="stat-val" id="totalExpense">₹0.00</div><div class="stat-hint" id="expenseSub">All time spending</div></div>
+        <div class="stat-card balance"><div class="stat-glow"></div><span class="stat-emoji">💼</span><div class="stat-lbl">Net Balance</div><div class="stat-val" id="netBalance">₹0.00</div><div class="stat-hint" id="balanceSub">Income minus expenses</div></div>
+        <div class="stat-card budgets"><div class="stat-glow"></div><span class="stat-emoji">🎯</span><div class="stat-lbl">Active Budgets</div><div class="stat-val" id="activeBudgets">0</div><div class="stat-hint">Spending limits set</div></div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="gcrd">
+          <div class="gcrd-hd">
+            <div><div class="gcrd-title">Income vs Expenses</div><div class="gcrd-sub">Monthly comparison</div></div>
+            <div class="ctabs">
+              <button class="ctab active" onclick="switchChart('bar',this)">Bar</button>
+              <button class="ctab" onclick="switchChart('line',this)">Line</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+        </div>
+        <div class="gcrd">
+          <div class="gcrd-hd"><div><div class="gcrd-title">By Category</div><div class="gcrd-sub">Expense breakdown</div></div></div>
+          <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+          <div class="legend" id="pieLegend"></div>
+        </div>
+      </div>
+
+      <!-- Bottom -->
+      <div class="bottom-row">
+        <div class="gcrd">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div><div class="gcrd-title">Recent Transactions</div><div class="gcrd-sub">Last 5 entries</div></div>
+            <a href="transaction.html" class="btn btn-ghost btn-sm">View all →</a>
+          </div>
+          <div id="recentList"><div class="skeleton" style="height:180px"></div></div>
+        </div>
+        <div>
+          <div class="gcrd" style="margin-bottom:14px">
+            <div class="gcrd-title">Quick Actions</div>
+            <div class="qgrid">
+              <a class="qbtn" href="transaction.html"><span class="qi">➕</span><span class="ql">Add Transaction</span></a>
+              <a class="qbtn" href="budget.html"><span class="qi">🎯</span><span class="ql">Set Budget</span></a>
+              <a class="qbtn" href="#" onclick="exportCSV()"><span class="qi">📥</span><span class="ql">Export CSV</span></a>
+              <a class="qbtn" href="profile.html"><span class="qi">👤</span><span class="ql">My Profile</span></a>
+            </div>
+          </div>
+          <div class="gcrd">
+            <div class="gcrd-title" style="margin-bottom:12px">Category Breakdown</div>
+            <div id="catBreakdown"><div class="skeleton" style="height:90px"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/sidebar.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); Sidebar.init();
+
+const now = new Date();
+document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const hr = now.getHours();
+document.getElementById('greetTime').textContent = hr<12?'Good morning ☀️':hr<17?'Good afternoon 🌤️':'Good evening 🌙';
+
+const user = auth.getUser();
+document.getElementById('greetName').textContent = user.full_name || user.email || 'User';
+
+// Role banner
+const roleMeta = {
+  viewer:  {icon:'👁️', title:'Viewer Mode',  desc:'Read-only access to records and summaries', cls:'viewer'},
+  analyst: {icon:'📊', title:'Analyst Mode', desc:'View records, apply filters and access detailed insights', cls:'analyst'},
+  admin:   {icon:'⚙️', title:'Admin Mode',   desc:'Full access — create, update, delete records and manage users', cls:'admin'},
+};
+const rm = roleMeta[user.role] || roleMeta.viewer;
+const banner = document.getElementById('roleBanner');
+banner.className = `role-banner ${rm.cls}`;
+banner.querySelector('.role-banner-icon').textContent = rm.icon;
+document.getElementById('roleBannerTitle').textContent = rm.title;
+document.getElementById('roleBannerDesc').textContent  = rm.desc;
+
+let mainChartInst, pieChartInst;
+const chartDefaults = {
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,19,33,.95)',titleColor:'#F0F4FF',bodyColor:'#8B95B0',borderColor:'rgba(255,255,255,.07)',borderWidth:1,padding:10,cornerRadius:8}},
+  scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8B95B0',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8B95B0',font:{size:11}}}}
+};
+
+function animateValue(id, target) {
+  const el = document.getElementById(id);
+  const dur = 900; const t0 = performance.now();
+  function tick(t) {
+    const p = Math.min((t-t0)/dur,1);
+    const e = 1-Math.pow(1-p,3);
+    el.textContent = utils.currency(target*e);
+    if(p<1) requestAnimationFrame(tick); else el.textContent=utils.currency(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function loadDashboard() {
+  try {
+    const [summary, txns, budgets] = await Promise.all([api.getSummary(), api.getTransactions({limit:10}), api.getBudgets()]);
+    animateValue('totalIncome',  summary.total_income   || 0);
+    animateValue('totalExpense', summary.total_expenses || 0);
+    animateValue('netBalance',   summary.balance        || 0);
+    document.getElementById('activeBudgets').textContent = (budgets||[]).length;
+    const sr = summary.total_income>0 ? Math.round(((summary.total_income-summary.total_expenses)/summary.total_income)*100) : 0;
+    document.getElementById('incomeSub').textContent  = `${sr}% savings rate`;
+    document.getElementById('expenseSub').textContent = summary.total_expenses>summary.total_income ? '⚠️ Over income' : '✅ Within income';
+    document.getElementById('balanceSub').textContent = (summary.balance||0)>=0 ? '🟢 Positive balance' : '🔴 Negative balance';
+    renderMainChart(summary,'bar'); renderPieChart(summary.category_breakdown||{});
+    renderRecent(txns||[]); renderCatBreakdown(summary.category_breakdown||{});
+  } catch(e) { utils.toast('Failed to load: '+e.message,'error'); }
+}
+
+function renderMainChart(summary, type) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthly = summary.monthly_totals || {};
+  const labels  = Object.keys(monthly).map(k=>{ const p=k.split('-'); return p.length===2?months[parseInt(p[1])-1]+"'"+p[0].slice(2):months[parseInt(k)-1]||k; });
+  const incomes = Object.values(monthly).map(v=>v.income||0);
+  const expenses= Object.values(monthly).map(v=>v.expense||0);
+  if(!labels.length){labels.push(...months.slice(0,6));incomes.push(...[0,0,0,0,0,0]);expenses.push(...[0,0,0,0,0,0]);}
+  const ctx=document.getElementById('mainChart');
+  if(mainChartInst) mainChartInst.destroy();
+  mainChartInst=new Chart(ctx,{type,data:{labels,datasets:[
+    {label:'Income',  data:incomes,  backgroundColor:type==='bar'?'rgba(0,229,176,.7)':'rgba(0,229,176,.15)',borderColor:'#00E5B0',borderWidth:2,borderRadius:type==='bar'?5:0,tension:.4,fill:type==='line',pointBackgroundColor:'#00E5B0',pointRadius:4},
+    {label:'Expenses',data:expenses, backgroundColor:type==='bar'?'rgba(255,92,124,.7)':'rgba(255,92,124,.1)',borderColor:'#FF5C7C',borderWidth:2,borderRadius:type==='bar'?5:0,tension:.4,fill:type==='line',pointBackgroundColor:'#FF5C7C',pointRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,...chartDefaults}});
+}
+
+function renderPieChart(cats) {
+  const labels=Object.keys(cats),amounts=Object.values(cats),colors=labels.map(l=>utils.catColor(l));
+  const ctx=document.getElementById('pieChart');
+  if(pieChartInst) pieChartInst.destroy();
+  if(!labels.length){document.getElementById('pieLegend').innerHTML='<p style="color:var(--text-muted);font-size:.78rem;text-align:center;padding:20px 0">No expense data yet</p>';return;}
+  pieChartInst=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data:amounts,backgroundColor:colors.map(c=>c+'CC'),borderColor:colors,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,19,33,.95)',callbacks:{label:ctx=>` ${utils.currency(ctx.raw)}`}}}}});
+  document.getElementById('pieLegend').innerHTML=labels.map((l,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l}</div>`).join('');
+}
+
+function renderRecent(txns) {
+  const el=document.getElementById('recentList');
+  if(!txns.length){el.innerHTML=`<div class="empty-state"><span class="empty-icon">💳</span><h3>No transactions yet</h3><p>Add your first transaction</p><a href="transaction.html" class="btn btn-primary btn-sm">Add Transaction</a></div>`;return;}
+  el.innerHTML=txns.slice(0,5).map(t=>`
+    <div class="recent-item">
+      <div class="r-icon" style="background:${utils.catColor(t.category)}22">${utils.catIcon(t.category)}</div>
+      <div class="r-meta"><div class="r-name">${t.description||t.category||'Transaction'}</div><div class="r-date">${utils.date(t.date)} · <span class="badge ${t.type==='income'?'badge-income':'badge-expense'}">${t.type}</span></div></div>
+      <div class="r-amt" style="color:${t.type==='income'?'var(--income)':'var(--expense)'}">${t.type==='income'?'+':'-'}${utils.currency(t.amount)}</div>
+    </div>`).join('');
+}
+
+function renderCatBreakdown(cats) {
+  const el=document.getElementById('catBreakdown');
+  const entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  if(!entries.length){el.innerHTML='<p style="color:var(--text-muted);font-size:.8rem">No data yet</p>';return;}
+  const max=entries[0][1];
+  el.innerHTML=entries.map(([cat,amt])=>`
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
+      <span style="font-size:13px">${utils.catIcon(cat)}</span>
+      <span style="font-size:.78rem;font-weight:500;min-width:65px">${cat}</span>
+      <div style="flex:1;height:5px;background:var(--bg-input);border-radius:99px;overflow:hidden"><div style="width:${utils.percent(amt,max)}%;height:100%;background:${utils.catColor(cat)};border-radius:99px;transition:width .8s ease"></div></div>
+      <span style="font-size:.74rem;font-weight:600;color:var(--text-secondary);min-width:58px;text-align:right">${utils.currency(amt)}</span>
+    </div>`).join('');
+}
+
+function switchChart(type,btn){document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');api.getSummary().then(s=>renderMainChart(s,type));}
+
+async function exportCSV(){
+  try{
+    const txns=await api.getTransactions();
+    if(!txns.length){utils.toast('No transactions to export','warning');return;}
+    const rows=[['Date','Type','Category','Amount','Description']];
+    txns.forEach(t=>rows.push([t.date,t.type,t.category||'',t.amount,t.description||'']));
+    const csv=rows.map(r=>r.join(',')).join('\n');
+    const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='transactions.csv';a.click();
+    utils.toast('CSV exported','success');
+  }catch(e){utils.toast('Export failed','error');}
+}
+
+document.getElementById('globalSearch').addEventListener('input',utils.debounce(e=>{const q=e.target.value.trim();if(q.length>1)window.location.href=`transaction.html?search=${encodeURIComponent(q)}`;},400));
+loadDashboard();
+</script>
+</body>
+</html>

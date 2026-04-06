@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Budget — FinTrack</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+.budget-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:all var(--tr)}
+.budget-card:hover{border-color:rgba(255,255,255,.11);transform:translateY(-2px);box-shadow:var(--shadow-card)}
+.budget-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.budget-cat{display:flex;align-items:center;gap:10px}
+.budget-icon{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-size:16px}
+.budget-name{font-weight:600;font-size:.9rem}
+.budget-period{font-size:.72rem;color:var(--text-secondary)}
+.budget-amounts{display:flex;justify-content:space-between;margin-bottom:8px;font-size:.8rem}
+.budget-spent{color:var(--text-secondary)}.budget-spent strong{color:var(--text-primary);font-family:var(--font-display)}
+.budget-limit{color:var(--text-secondary);text-align:right}.budget-limit strong{color:var(--text-primary);font-family:var(--font-display)}
+.budget-pct{font-size:.72rem;margin-top:6px;display:flex;justify-content:space-between;color:var(--text-muted)}
+.budget-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.overview-bar{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:22px}
+.ov-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ov-label{font-size:.82rem;color:var(--text-secondary);min-width:100px}
+.ov-bar{flex:1;height:8px;background:var(--bg-input);border-radius:99px;overflow:hidden}
+.ov-fill{height:100%;border-radius:99px;transition:width .8s ease}
+.ov-val{font-size:.82rem;font-weight:600;font-family:var(--font-display);min-width:80px;text-align:right}
+.add-budget-card{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:all var(--tr);min-height:180px}
+.add-budget-card:hover{border-color:var(--border-accent);background:var(--accent-dim)}
+.add-budget-card .add-icon{font-size:28px;opacity:.4}
+.add-budget-card .add-text{font-size:.82rem;color:var(--text-secondary)}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item active" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <a class="nav-item nav-analytics" href="analytics.html" style="display:none"><span class="nav-icon">📈</span> Analytics</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item nav-users" href="users.html" style="display:none"><span class="nav-icon">👥</span> Users <span class="nav-badge" id="userCount">0</span></a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card"><div class="user-avatar" id="userAvatar">M</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div></div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Budget Tracker</div><div class="navbar-subtitle">Monitor your spending limits</div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Set Budget</button>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div><div class="page-title">Budget Overview</div><div class="page-desc">Set limits and track spending per category</div></div>
+        <div class="page-header-right">
+          <button class="btn btn-primary btn-sm" onclick="openModal()">+ New Budget</button>
+        </div>
+      </div>
+
+      <!-- Overview Summary -->
+      <div class="overview-bar" id="overviewBar">
+        <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+          <div class="card-title">Total Budget Health</div>
+          <span class="badge badge-blue" id="healthBadge">Loading...</span>
+        </div>
+        <div id="overviewRows"><div class="skeleton" style="height:60px"></div></div>
+      </div>
+
+      <!-- Budget Cards Grid -->
+      <div class="budget-grid stagger" id="budgetGrid">
+        <div class="skeleton" style="height:180px;border-radius:var(--radius-lg)"></div>
+        <div class="skeleton" style="height:180px;border-radius:var(--radius-lg)"></div>
+        <div class="skeleton" style="height:180px;border-radius:var(--radius-lg)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modalTitle">Set Budget</div><div class="modal-subtitle">Define spending limit for a category</div></div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="mCategory">
+          <option value="">Select category</option>
+          <option>Food</option><option>Rent</option><option>Travel</option><option>Shopping</option>
+          <option>Health</option><option>Education</option><option>Entertainment</option>
+          <option>Utilities</option><option>Investment</option><option>Other</option>
+        </select>
+        <div class="form-error" id="catErr">Select a category</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Budget Limit (₹)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">₹</span>
+            <input class="form-input" id="mAmount" type="number" min="1" step="0.01" placeholder="5000">
+          </div>
+          <div class="form-error" id="amtErr">Enter valid amount</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period</label>
+          <select class="form-select" id="mPeriod">
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes <span style="color:var(--text-muted)">(optional)</span></label>
+        <input class="form-input" id="mNotes" type="text" placeholder="e.g. Includes dining out">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveBudget()">Save Budget</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/sidebar.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); Sidebar.init();
+let editingId = null;
+
+async function load() {
+  try {
+    const [budgets, summary] = await Promise.all([api.getBudgets(), api.getSummary()]);
+    const cats = summary.category_breakdown || {};
+    renderOverview(budgets, cats);
+    renderCards(budgets, cats);
+  } catch(e) {
+    utils.toast('Failed to load: ' + e.message, 'error');
+  }
+}
+
+function renderOverview(budgets, cats) {
+  const total = budgets.reduce((s,b)=>s+parseFloat(b.amount||0),0);
+  const spent = budgets.reduce((s,b)=>s+parseFloat(cats[(b.category||'').toLowerCase()]||cats[b.category]||0),0);
+  const pct   = utils.percent(spent, total);
+
+  document.getElementById('healthBadge').textContent = pct>=90?'⚠️ Over budget': pct>=70?'📊 On track':'✅ Healthy';
+  document.getElementById('healthBadge').className   = `badge ${pct>=90?'badge-expense':pct>=70?'badge-warning':'badge-income'}`;
+
+  document.getElementById('overviewRows').innerHTML = `
+    <div class="ov-row">
+      <span class="ov-label">Total Budgeted</span>
+      <div class="ov-bar"><div class="ov-fill" style="width:100%;background:var(--blue)"></div></div>
+      <span class="ov-val" style="color:var(--blue)">${utils.currency(total)}</span>
+    </div>
+    <div class="ov-row">
+      <span class="ov-label">Total Spent</span>
+      <div class="ov-bar"><div class="ov-fill" style="width:${pct}%;background:${utils.progressColor(pct)}"></div></div>
+      <span class="ov-val" style="color:${utils.progressColor(pct)}">${utils.currency(spent)}</span>
+    </div>
+    <div class="ov-row">
+      <span class="ov-label">Remaining</span>
+      <div class="ov-bar"><div class="ov-fill" style="width:${100-pct}%;background:var(--income)"></div></div>
+      <span class="ov-val" style="color:var(--income)">${utils.currency(Math.max(0,total-spent))}</span>
+    </div>`;
+}
+
+function renderCards(budgets, cats) {
+  const grid = document.getElementById('budgetGrid');
+  if (!budgets.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🎯</span><h3>No budgets set</h3><p>Set spending limits for your categories</p><button class="btn btn-primary btn-sm" onclick="openModal()">+ Set First Budget</button></div>`;
+    return;
+  }
+
+  grid.innerHTML = budgets.map(b => {
+    const spent = parseFloat(cats[(b.category||'').toLowerCase()] || cats[b.category] || 0);
+    const limit = parseFloat(b.amount || 0);
+    const pct   = utils.percent(spent, limit);
+    const color = utils.progressColor(pct);
+    return `
+      <div class="budget-card">
+        <div class="budget-header">
+          <div class="budget-cat">
+            <div class="budget-icon" style="background:${utils.catColor(b.category)}22">${utils.catIcon(b.category)}</div>
+            <div><div class="budget-name">${b.category||'Other'}</div><div class="budget-period">${b.period||'Monthly'}</div></div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick='editBudget(${JSON.stringify(b)})'>✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteBudget(${b.id})">🗑️</button>
+          </div>
+        </div>
+        <div class="budget-amounts">
+          <div class="budget-spent">Spent <strong style="color:${color}">${utils.currency(spent)}</strong></div>
+          <div class="budget-limit">Limit <strong>${utils.currency(limit)}</strong></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="budget-pct">
+          <span style="color:${color}">${pct}% used</span>
+          <span>${utils.currency(Math.max(0,limit-spent))} left</span>
+        </div>
+        ${b.notes?`<div style="margin-top:10px;font-size:.72rem;color:var(--text-muted);padding-top:10px;border-top:1px solid var(--border)">📝 ${b.notes}</div>`:''}
+      </div>`;
+  }).join('') + `<div class="add-budget-card" onclick="openModal()"><div class="add-icon">➕</div><div class="add-text">Add New Budget</div></div>`;
+}
+
+function openModal(reset=true) {
+  if (reset) {
+    editingId=null;
+    document.getElementById('modalTitle').textContent='Set Budget';
+    document.getElementById('saveBtn').textContent='Save Budget';
+    ['mCategory','mAmount','mNotes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mPeriod').value='monthly';
+  }
+  document.getElementById('budgetModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('budgetModal').classList.remove('open'); }
+
+function editBudget(b) {
+  editingId=b.id;
+  document.getElementById('modalTitle').textContent='Edit Budget';
+  document.getElementById('saveBtn').textContent='Update Budget';
+  document.getElementById('mCategory').value=b.category||'';
+  document.getElementById('mAmount').value=b.amount||'';
+  document.getElementById('mPeriod').value=b.period||'monthly';
+  document.getElementById('mNotes').value=b.notes||'';
+  openModal(false);
+}
+
+async function saveBudget() {
+  const cat = document.getElementById('mCategory').value;
+  const amt = parseFloat(document.getElementById('mAmount').value);
+  const period = document.getElementById('mPeriod').value;
+  const notes = document.getElementById('mNotes').value;
+
+  ['catErr','amtErr'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  let ok=true;
+  if (!cat) { document.getElementById('catErr').classList.add('show'); ok=false; }
+  if (!amt||amt<=0) { document.getElementById('amtErr').classList.add('show'); ok=false; }
+  if (!ok) return;
+
+  const payload = { category:cat, amount:amt, period, notes };
+  const btn=document.getElementById('saveBtn');
+  utils.setLoading(btn, true);
+  try {
+    if (editingId) { await api.updateBudget(editingId, payload); utils.toast('Budget updated','success'); }
+    else { await api.createBudget(payload); utils.toast('Budget created','success'); }
+    closeModal(); await load();
+  } catch(e) { utils.toast(e.message,'error'); }
+  finally { utils.setLoading(btn, false); }
+}
+
+async function deleteBudget(id) {
+  if (!await utils.confirm('Delete this budget?')) return;
+  try { await api.deleteBudget(id); utils.toast('Budget deleted','success'); await load(); }
+  catch(e) { utils.toast(e.message,'error'); }
+}
+
+document.getElementById('budgetModal').addEventListener('click',e=>{ if(e.target===document.getElementById('budgetModal')) closeModal(); });
+load();
+</script>
+</body>
+</html>

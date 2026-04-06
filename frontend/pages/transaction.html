@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transactions — FinTrack</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+.type-toggle{display:flex;gap:8px;margin-bottom:6px}
+.type-btn{flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all var(--tr);font-size:.85rem;font-weight:600;text-align:center;color:var(--text-secondary)}
+.type-btn.income.active{background:rgba(0,229,176,.12);border-color:var(--income);color:var(--income)}
+.type-btn.expense.active{background:rgba(255,92,124,.12);border-color:var(--expense);color:var(--expense)}
+.amount-input{font-family:var(--font-display);font-size:1.6rem;font-weight:800;text-align:center;letter-spacing:.02em}
+.pagination{display:flex;align-items:center;gap:6px;margin-top:18px;justify-content:center}
+.page-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);display:grid;place-items:center;cursor:pointer;transition:all var(--tr);font-size:.82rem}
+.page-btn:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.page-btn.active{background:var(--accent-dim);border-color:var(--border-accent);color:var(--accent)}
+.stats-mini{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.stats-mini-item{font-size:.8rem;color:var(--text-secondary)}.stats-mini-item strong{color:var(--text-primary);font-family:var(--font-display)}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">💰</div><div><div class="logo-text">FinTrack</div><div class="logo-sub">Finance System</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item active" href="transaction.html"><span class="nav-icon">💳</span> Transactions</a>
+      <a class="nav-item" href="budget.html"><span class="nav-icon">🎯</span> Budget</a>
+      <a class="nav-item nav-analytics" href="analytics.html" ><span class="nav-icon">📈</span> Analytics</a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> Profile</a>
+      <a class="nav-item nav-users" href="users.html" ><span class="nav-icon">👥</span> Users <span class="nav-badge" id="userCount">0</span></a>
+      <a class="nav-item" href="#" onclick="auth.logout()"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card"><div class="user-avatar" id="userAvatar">M</div><div class="user-info"><div class="user-name" id="userName">Loading...</div><div class="user-role" id="userRole">Member</div></div></div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="navbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div><div class="navbar-title">Transactions</div><div class="navbar-subtitle">Manage your income & expenses</div></div>
+      <div class="navbar-spacer"></div>
+      <div class="navbar-search"><span class="search-icon">🔍</span><input type="text" placeholder="Search..." id="searchInput" oninput="filterTxns()"></div>
+      <div class="navbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add Transaction</button>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div><div class="page-title">All Transactions</div><div class="page-desc" id="txnCount">Loading...</div></div>
+        <div class="page-header-right">
+          <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add New</button>
+        </div>
+      </div>
+
+      <!-- Mini Stats -->
+      <div class="stats-mini" id="miniStats"></div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <select class="form-select" id="filterType" onchange="filterTxns()">
+          <option value="">All Types</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        <select class="form-select" id="filterCat" onchange="filterTxns()">
+          <option value="">All Categories</option>
+          <option>Food</option><option>Rent</option><option>Salary</option><option>Travel</option>
+          <option>Shopping</option><option>Health</option><option>Education</option>
+          <option>Entertainment</option><option>Utilities</option><option>Investment</option><option>Other</option>
+        </select>
+        <input class="form-input" type="date" id="filterFrom" onchange="filterTxns()" placeholder="From">
+        <input class="form-input" type="date" id="filterTo" onchange="filterTxns()" placeholder="To">
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Clear</button>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th style="width:80px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="txnTable">
+              <tr><td colspan="6" style="padding:40px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="txnModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modalTitle">Add Transaction</div><div class="modal-subtitle">Fill in the details below</div></div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+
+      <div class="type-toggle">
+        <div class="type-btn income active" onclick="setType('income',this)">📈 Income</div>
+        <div class="type-btn expense" onclick="setType('expense',this)">📉 Expense</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Amount</label>
+        <div class="input-wrapper">
+          <span class="input-icon">₹</span>
+          <input class="form-input amount-input" id="mAmount" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-error" id="amtErr">Enter a valid amount</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="mCategory">
+            <option value="">Select category</option>
+            <option>Food</option><option>Rent</option><option>Salary</option><option>Travel</option>
+            <option>Shopping</option><option>Health</option><option>Education</option>
+            <option>Entertainment</option><option>Utilities</option><option>Investment</option><option>Other</option>
+          </select>
+          <div class="form-error" id="catErr">Select a category</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" id="mDate">
+          <div class="form-error" id="dateErr">Date is required</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description <span style="color:var(--text-muted)">(optional)</span></label>
+        <input class="form-input" id="mDesc" type="text" placeholder="e.g. Monthly rent payment">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveTxn()">Save Transaction</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/sidebar.js"></script>
+<script>
+auth.requireAuth(); auth.initUserUI(); Sidebar.init();
+
+let allTxns = [], filtered = [], page = 1, perPage = 10, editingId = null, selType = 'income';
+
+const CATS = ['Food','Rent','Salary','Travel','Shopping','Health','Education','Entertainment','Utilities','Investment','Other'];
+
+async function loadTxns() {
+  try {
+    allTxns = await api.getTransactions() || [];
+    // Check URL for search param
+    const urlSearch = new URLSearchParams(window.location.search).get('search');
+    if (urlSearch) document.getElementById('searchInput').value = urlSearch;
+    filterTxns();
+    renderMiniStats();
+  } catch(e) {
+    utils.toast('Failed to load: ' + e.message, 'error');
+    document.getElementById('txnTable').innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="empty-icon">⚠️</span><h3>Could not load</h3><p>${e.message}</p></div></td></tr>`;
+  }
+}
+
+function renderMiniStats() {
+  const income  = allTxns.filter(t=>t.type==='income').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const expense = allTxns.filter(t=>t.type==='expense').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  document.getElementById('miniStats').innerHTML = `
+    <div class="stats-mini-item">Total: <strong>${allTxns.length}</strong></div>
+    <div class="stats-mini-item">Income: <strong style="color:var(--income)">${utils.currency(income)}</strong></div>
+    <div class="stats-mini-item">Expenses: <strong style="color:var(--expense)">${utils.currency(expense)}</strong></div>
+    <div class="stats-mini-item">Balance: <strong style="color:var(--blue)">${utils.currency(income-expense)}</strong></div>`;
+}
+
+function filterTxns() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const type   = document.getElementById('filterType').value;
+  const cat    = document.getElementById('filterCat').value;
+  const from   = document.getElementById('filterFrom').value;
+  const to     = document.getElementById('filterTo').value;
+
+  filtered = allTxns.filter(t => {
+    if (type && t.type !== type) return false;
+    if (cat  && (t.category||'').toLowerCase() !== cat.toLowerCase()) return false;
+    if (from && t.date < from) return false;
+    if (to   && t.date > to)   return false;
+    if (search) {
+      const s = (t.description||'') + (t.category||'') + (t.amount||'');
+      if (!s.toLowerCase().includes(search)) return false;
+    }
+    return true;
+  });
+
+  page = 1;
+  document.getElementById('txnCount').textContent = `${filtered.length} transaction${filtered.length!==1?'s':''} found`;
+  renderTable();
+  renderPagination();
+}
+
+function renderTable() {
+  const start = (page-1)*perPage;
+  const slice = filtered.slice(start, start+perPage);
+
+  if (!slice.length) {
+    document.getElementById('txnTable').innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="empty-icon">💳</span><h3>No transactions</h3><p>Try adjusting your filters or add a new transaction</p><button id="addTxnBtn" class="btn btn-primary btn-sm" onclick="openModal()">+ Add Transaction</button></div></td></tr>`;
+    return;
+  }
+
+  document.getElementById('txnTable').innerHTML = slice.map(t => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:${utils.catColor(t.category)}22;display:grid;place-items:center;flex-shrink:0">${utils.catIcon(t.category)}</div>
+          <div>
+            <div style="font-weight:600;font-size:.85rem">${utils.truncate(t.description || 'Transaction', 28)}</div>
+            <div style="font-size:.72rem;color:var(--text-muted)">#${t.id}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge ${t.type==='income'?'badge-income':'badge-expense'}">${t.type}</span></td>
+      <td><span style="font-size:.82rem">${utils.catIcon(t.category)} ${t.category||'—'}</span></td>
+      <td style="color:var(--text-secondary);font-size:.82rem">${utils.date(t.date)}</td>
+      <td><span style="font-family:var(--font-display);font-weight:700;color:${t.type==='income'?'var(--income)':'var(--expense)'}">${t.type==='income'?'+':'-'}${utils.currency(t.amount)}</span></td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick='editTxn(${JSON.stringify(t)})' title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTxn(${t.id})" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function renderPagination() {
+  const total = Math.ceil(filtered.length / perPage);
+  if (total <= 1) { document.getElementById('pagination').innerHTML=''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹</button>`;
+  for (let i=1;i<=total;i++) {
+    if (total > 7 && i>2 && i<total-1 && Math.abs(i-page)>1) { if(i===3||i===total-2) html+='<span style="color:var(--text-muted);padding:0 4px">…</span>'; continue; }
+    html += `<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${page+1})" ${page===total?'disabled':''}>›</button>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) { const max=Math.ceil(filtered.length/perPage); if(p<1||p>max)return; page=p; renderTable(); renderPagination(); window.scrollTo(0,0); }
+
+function openModal(reset=true) {
+  if (reset) {
+    editingId=null;
+    document.getElementById('modalTitle').textContent='Add Transaction';
+    document.getElementById('saveBtn').textContent='Save Transaction';
+    document.getElementById('editId').value='';
+    document.getElementById('mAmount').value='';
+    document.getElementById('mCategory').value='';
+    document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+    document.getElementById('mDesc').value='';
+    setType('income', document.querySelector('.type-btn.income'));
+  }
+  document.getElementById('txnModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('txnModal').classList.remove('open'); }
+
+function setType(t, el) {
+  selType = t;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function editTxn(t) {
+  editingId = t.id;
+  document.getElementById('modalTitle').textContent = 'Edit Transaction';
+  document.getElementById('saveBtn').textContent = 'Update Transaction';
+  document.getElementById('mAmount').value = t.amount;
+  document.getElementById('mCategory').value = t.category || '';
+  document.getElementById('mDate').value = t.date ? t.date.split('T')[0] : '';
+  document.getElementById('mDesc').value = t.description || '';
+  selType = t.type;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.type-btn.${t.type}`).classList.add('active');
+  openModal(false);
+}
+
+async function saveTxn() {
+  const amt = parseFloat(document.getElementById('mAmount').value);
+  const cat = document.getElementById('mCategory').value;
+  const dt  = document.getElementById('mDate').value;
+  const desc= document.getElementById('mDesc').value.trim();
+
+  ['amtErr','catErr','dateErr'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  let ok=true;
+  if (!amt || amt<=0) { document.getElementById('amtErr').classList.add('show'); ok=false; }
+  if (!cat)           { document.getElementById('catErr').classList.add('show'); ok=false; }
+  if (!dt)            { document.getElementById('dateErr').classList.add('show'); ok=false; }
+  if (!ok) return;
+
+  const payload = { amount:amt, type:selType, category:cat, date:dt, description:desc };
+  const btn = document.getElementById('saveBtn');
+  utils.setLoading(btn, true);
+
+  try {
+    if (editingId) {
+      await api.updateTransaction(editingId, payload);
+      utils.toast('Transaction updated','success');
+    } else {
+      await api.createTransaction(payload);
+      utils.toast('Transaction added','success');
+    }
+    closeModal();
+    await loadTxns();
+  } catch(e) {
+    utils.toast(e.message, 'error');
+  } finally {
+    utils.setLoading(btn, false);
+  }
+}
+
+async function deleteTxn(id) {
+  if (!await utils.confirm('Delete this transaction?')) return;
+  try {
+    await api.deleteTransaction(id);
+    utils.toast('Transaction deleted','success');
+    await loadTxns();
+  } catch(e) { utils.toast(e.message,'error'); }
+}
+
+async function exportCSV() {
+  const rows = [['Date','Type','Category','Amount','Description']];
+  filtered.forEach(t=>rows.push([t.date,t.type,t.category||'',t.amount,t.description||'']));
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='transactions.csv'; a.click();
+  utils.toast('Exported successfully','success');
+}
+
+function clearFilters() {
+  ['filterType','filterCat','filterFrom','filterTo'].forEach(id=>{ const el=document.getElementById(id); if(el.tagName==='SELECT') el.value=''; else el.value=''; });
+  document.getElementById('searchInput').value='';
+  filterTxns();
+}
+
+document.getElementById('txnModal').addEventListener('click', e=>{ if(e.target===document.getElementById('txnModal')) closeModal(); });
+
+loadTxns();
+</script>
+</body>
+</html>
