@@ -18,47 +18,74 @@
     <a class="nav-item" href="dashboard.html">Dashboard</a>
     <a class="nav-item" href="transaction.html">Transactions</a>
     <a class="nav-item" href="budget.html">Budget</a>
-    <a class="nav-item nav-analytics" href="analytics.html">Analytics</a>
-
+    <a class="nav-item" href="analytics.html">Analytics</a>
     <a class="nav-item" href="profile.html">Profile</a>
-    <a class="nav-item nav-users active" href="users.html">Users</a>
+    <a class="nav-item active" href="users.html">Users</a>
     <a class="nav-item" onclick="auth.logout()">Logout</a>
   </nav>
 </aside>
 
 <!-- MAIN -->
 <div class="main-content">
+<div class="page-content">
 
-<h2>User Management</h2>
-
-<div style="margin-bottom:20px">
-  <input type="text" id="search" placeholder="Search users..." oninput="filterUsers()">
-  
-  <button id="addUserBtn" style="display:none">➕ Add User</button>
+<div class="page-header">
+  <div>
+    <div class="page-title">User Management</div>
+    <div class="page-desc">Manage users and roles</div>
+  </div>
 </div>
 
-<div id="stats"></div>
+<div class="filter-bar">
+  <input class="form-input" type="text" id="search" placeholder="Search users..." oninput="filterUsers()">
+  <button id="addUserBtn" class="btn btn-primary" style="display:none">➕ Add User</button>
+</div>
+
 <div id="users"></div>
 
 </div>
 </div>
+</div>
 
-<!-- ADD USER MODAL -->
-<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0008;justify-content:center;align-items:center">
-  <div style="background:#111;padding:20px;border-radius:10px">
-    <h3>Create User</h3>
-    <input id="name" placeholder="Name"><br><br>
-    <input id="email" placeholder="Email"><br><br>
-    <input id="password" type="password" placeholder="Password"><br><br>
+<!-- ✅ MODAL USING GLOBAL CSS -->
+<div id="modal" class="modal-overlay">
+  <div class="modal">
 
-    <select id="role">
-      <option value="viewer">Viewer</option>
-      <option value="analyst">Analyst</option>
-      <option value="admin">Admin</option>
-    </select><br><br>
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Create User</div>
+        <div class="modal-subtitle">Add new user</div>
+      </div>
+      <div class="modal-close" onclick="closeModal()">✖</div>
+    </div>
 
-    <button onclick="createUser()">Create</button>
-    <button onclick="closeModal()">Cancel</button>
+    <div class="modal-body">
+      <div class="form-group">
+        <input class="form-input" id="name" placeholder="Full Name">
+      </div>
+
+      <div class="form-group">
+        <input class="form-input" id="email" placeholder="Email">
+      </div>
+
+      <div class="form-group">
+        <input class="form-input" id="password" type="password" placeholder="Password">
+      </div>
+
+      <div class="form-group">
+        <select class="form-select" id="role">
+          <option value="viewer">Viewer</option>
+          <option value="analyst">Analyst</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createUser()">Create</button>
+    </div>
+
   </div>
 </div>
 
@@ -75,7 +102,7 @@ if (me.role === 'viewer') {
   window.location.href = "dashboard.html";
 }
 
-// SHOW ADD BUTTON ONLY ADMIN
+// show add button only for admin
 if (me.role === 'admin') {
   document.getElementById("addUserBtn").style.display = "inline-block";
 }
@@ -93,24 +120,29 @@ async function loadUsers() {
 
 function renderUsers(users) {
   document.getElementById("users").innerHTML = users.map(u => `
-    <div style="border:1px solid #444;margin:10px;padding:10px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
 
-      <b>${u.full_name}</b> (${u.email})<br>
-      Role: ${u.role}
+        <div>
+          <b>${u.full_name}</b><br>
+          <span class="text-muted">${u.email}</span><br>
+          <span class="badge badge-blue">${u.role}</span>
+        </div>
 
-      <br><br>
+        <div>
+          <select id="r${u.id}" class="form-select" ${me.role !== 'admin' ? 'disabled' : ''}>
+            <option ${u.role=='viewer'?'selected':''}>viewer</option>
+            <option ${u.role=='analyst'?'selected':''}>analyst</option>
+            <option ${u.role=='admin'?'selected':''}>admin</option>
+          </select>
 
-      <select id="r${u.id}" ${me.role !== 'admin' ? 'disabled' : ''}>
-        <option ${u.role=='viewer'?'selected':''}>viewer</option>
-        <option ${u.role=='analyst'?'selected':''}>analyst</option>
-        <option ${u.role=='admin'?'selected':''}>admin</option>
-      </select>
+          ${me.role === 'admin' ? `
+            <button class="btn btn-primary btn-sm" onclick="updateRole(${u.id})">Update</button>
+            ${u.id !== me.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+          ` : ''}
+        </div>
 
-      ${me.role === 'admin' ? `
-        <button onclick="updateRole(${u.id})">Update</button>
-        ${u.id !== me.id ? `<button onclick="deleteUser(${u.id})">Delete</button>` : ''}
-      ` : ''}
-
+      </div>
     </div>
   `).join('');
 }
@@ -124,29 +156,32 @@ function filterUsers() {
   renderUsers(filtered);
 }
 
-// UPDATE ROLE
 async function updateRole(id) {
   const role = document.getElementById("r"+id).value;
   await api.updateUser(id, { role });
   loadUsers();
 }
 
-// DELETE
 async function deleteUser(id) {
   if (!confirm("Delete user?")) return;
   await api.deleteUser(id);
   loadUsers();
 }
 
-// ADD USER
-document.getElementById("addUserBtn").onclick = () => {
-  document.getElementById("modal").style.display = "flex";
+// OPEN MODAL
+window.onload = () => {
+  document.getElementById("addUserBtn").onclick = () => {
+    console.log("clicked");
+    document.getElementById("modal").classList.add("open");
+  };
 };
 
+// CLOSE MODAL
 function closeModal() {
-  document.getElementById("modal").style.display = "none";
+  document.getElementById("modal").classList.remove("open");
 }
 
+// CREATE USER
 async function createUser() {
   const data = {
     full_name: name.value,
