@@ -253,3 +253,158 @@ a:hover{opacity:.8}
   .navbar-search{display:none}
 }
 @media(max-width:480px){.stat-grid{grid-template-columns:1fr}h1{font-size:1.5rem}}
+/* ===== USERS PAGE MODAL FIX ===== */
+#modal {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999 !important; /* 🔥 FORCE TOP */
+}
+
+#modal.active {
+  display: flex !important;
+}
+
+#modal .modal-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1;
+}
+
+#modal .modal-box {
+  position: relative;
+  z-index: 2;
+
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+
+  width: 360px;
+  padding: 24px;
+
+  box-shadow: 0 25px 80px rgba(0,0,0,0.7);
+
+  animation: scaleIn 0.3s ease;
+}
+
+#modal input,
+#modal select {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+
+
+
+
+
+
+
+/* ===== SIDEBAR FIX (ADMIN VIEW) ===== */
+
+.sidebar {
+  width: 250px;
+  background: #0D1321;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+/* NAV ITEMS */
+.sidebar-nav {
+  padding: 15px 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+
+  color: #8B95B0;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* HOVER */
+.nav-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
+}
+
+/* ACTIVE ITEM */
+.nav-item.active {
+  background: rgba(0,229,176,0.15);
+  color: #00E5B0;
+  border: 1px solid rgba(0,229,176,0.3);
+}
+
+/* LOGOUT SPECIAL */
+.nav-item:last-child {
+  margin-top: 10px;
+  color: #FF5C7C;
+}
+
+.nav-item:last-child:hover {
+  background: rgba(255,92,124,0.1);
+}
+
+/* LOGO */
+.sidebar-logo {
+  padding: 18px;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+
+/* MOBILE SIDEBAR */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100%;
+    transition: 0.3s;
+    z-index: 1000;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+}
+/* ===== LAYOUT FIX ===== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #0D1321;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+/* MAIN CONTENT */
+.main-content {
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  padding: 20px;
+}
