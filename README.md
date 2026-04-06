@@ -602,7 +602,8 @@ python-multipart
 
 *Python Developer Intern Assignment — Zorvyn FinTech Pvt. Ltd. · 2026*
 
-[![LinkedIn]([https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=flat-square&logo=linkedin)](https://linkedin.com/in/yourprofile](https://www.linkedin.com/in/mohit-gautam-2b4813229/))
+[![LinkedIn]
+https://www.linkedin.com/in/mohit-gautam-2b4813229/
 
 ⭐ If you found this useful, consider giving it a star!
 
