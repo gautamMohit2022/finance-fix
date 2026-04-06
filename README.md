@@ -48,7 +48,7 @@
 <img width="1909" height="868" alt="Screenshot 2026-04-06 191518" src="https://github.com/user-attachments/assets/f3f7f0a9-3676-4750-9745-329b1ed23dca" />
 
 
-> 🖼️ *Replace placeholders above with actual screenshots from [the live demo](https://fintrack-analytics.netlify.app)*
+ [the live demo](https://fintrack-analytics.netlify.app)*
 
 </div>
 
