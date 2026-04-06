@@ -93,7 +93,7 @@
             <label class="form-label">Email Address</label>
             <div class="input-wrapper"><span class="input-icon">✉️</span><input class="form-input" id="fEmail" type="email" placeholder="your@email.com"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="roleGroup">
             <label class="form-label">Role</label>
             <select class="form-select" id="fRole">
               <option value="viewer">👁️ Viewer — Read only</option>
@@ -186,7 +186,11 @@ async function loadProfile() {
     // Form prefill
     document.getElementById('fName').value  = user.full_name || '';
     document.getElementById('fEmail').value = user.email || '';
-    document.getElementById('fRole').value  = user.role || 'viewer';
+    // 🔒 Role restriction
+    if (user.role !== "admin") {
+  // Hide role dropdown completely
+      document.getElementById("roleGroup").style.display = "none";
+    }
 
     // Mini stats
     document.getElementById('miniStats').innerHTML = `
@@ -201,7 +205,12 @@ async function loadProfile() {
 async function saveProfile() {
   const name  = document.getElementById('fName').value.trim();
   const email = document.getElementById('fEmail').value.trim();
-  const role  = document.getElementById('fRole').value;
+  let role = null;
+  const currentUser = auth.getUser ? auth.getUser() : null;
+
+  if (currentUser && currentUser.role === "admin") {
+  role = document.getElementById('fRole').value;
+  }
   if (!name || !email) { utils.toast('Name and email are required','warning'); return; }
   const btn = document.getElementById('saveProfileBtn');
   utils.setLoading(btn, true);
